@@ -19,9 +19,9 @@ const roleOf = (db, key) => {
   return d && same(key, d) ? "davi" : null;
 };
 
-// O Davi só recebe estoque e manutenções. Nada do restante do painel sai daqui.
+// O Davi só recebe estoque, manutenções e revisões. Nada do restante do painel sai daqui.
 function view(db, role) {
-  const out = { role, rev: db.rev || 0, stock: db.stock || null, maint: db.maint || null };
+  const out = { role, rev: db.rev || 0, stock: db.stock || null, maint: db.maint || null, check: db.check || null };
   if (role === "owner") {
     out.core = db.core || null;
     const k = daviKey(db);
@@ -57,6 +57,7 @@ export default async function handler(req, res) {
       if (role === "owner" && body.core && typeof body.core === "object" && (!db.core || (+body.core.u || 0) >= (+db.core.u || 0))) db.core = body.core;
       if (validDoc(body.stock)) db.stock = mergeShared(db.stock, body.stock, role === "davi");
       if (validDoc(body.maint)) db.maint = mergeShared(db.maint, body.maint, role === "davi");
+      if (validDoc(body.check)) db.check = mergeShared(db.check, body.check, role === "davi");
       db.rev = (db.rev || 0) + 1;
       await writeDb(db);
       return send(200, view(db, role));

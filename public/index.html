@@ -31,7 +31,7 @@ button{font:inherit;cursor:pointer;border:0;color:var(--text)}
 #lines polygon{fill:var(--line);opacity:.9}
 
 .root-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:90px}
-.topwrap{margin-bottom:80px}
+.topwrap{margin-bottom:80px;display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
 .row{display:flex;flex-wrap:wrap;justify-content:center;gap:34px 28px}
 
 .node{
@@ -210,6 +210,21 @@ table.os td small,table.os th{white-space:nowrap}
 .kempty{color:var(--muted);text-align:center;padding:10px}
 a.ib{display:inline-grid;place-items:center;text-decoration:none;color:inherit;vertical-align:middle}
 li.clk .t small{display:block}
+.node.side[data-id=check] .avatar{background:linear-gradient(135deg,#14b8a6,#22c55e)}
+ul.cks{gap:8px}
+ul.cks li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px}
+ul.cks li.nc{border-color:#fb718588;background:#2a1f3a}
+ul.cks .t{flex:1 1 220px}ul.cks .t input{width:100%}
+ul.cks .note{flex:1 1 100%;font-size:.85rem}
+.seg3{display:flex;gap:6px;flex-wrap:wrap}
+.seg3 button{background:var(--bg);border:1px solid #2c3260;border-radius:999px;padding:8px 13px;font-size:.82rem;color:var(--muted);font-weight:600}
+.seg3 button:disabled{opacity:.3;cursor:default}
+.seg3 button.on.ok{background:#34d39933;border-color:var(--ok);color:var(--ok)}
+.seg3 button.on.nc{background:#fb718533;border-color:var(--danger);color:var(--danger)}
+.seg3 button.on.na{background:#ffffff1a;color:var(--text)}
+.ag{display:flex;flex-direction:column;gap:6px;margin:0}
+.ag li{padding:10px 14px;border-radius:16px}
+.ag .tm{color:var(--accent2);font-weight:700;min-width:46px;font-size:.85rem}
 .sync{font-size:.8rem;color:var(--muted);align-self:center}
 .sync.ok{color:var(--ok)}.sync.bad{color:var(--danger)}
 .srv-only{display:none}
@@ -304,6 +319,7 @@ li.mi.fin{opacity:.8}
 <script src="merge.js"></script>
 <script src="maint.js"></script>
 <script src="sales.js"></script>
+<script src="check.js"></script>
 <script>
 let KEY = "minha-equipe-v1";
 const COLORS = ["#7c5cff","#22d3ee","#f472b6","#fb923c","#34d399","#facc15","#60a5fa","#f87171"];
@@ -341,6 +357,7 @@ function normalize(s){
   s.maint = Object.assign({ name:"Manutenções", role:"Equipamentos e reparos", items:[] }, s.maint);
   s.maint.items = s.maint.items.map(normMaintItem); numberMaint(s.maint.items);
   s.crm = normCrm(s.crm);
+  s.check = normCheck(s.check);
   s.stock.moves = s.stock.moves.map(m => Object.assign({ by:"Eu" }, m));
   s.stock.del = s.stock.del || {}; s.maint.del = s.maint.del || {};
   s.people.forEach(p => {
@@ -370,12 +387,12 @@ let MODE = "local";
 const ME = () => MODE === "davi" ? "Davi" : "Eu";
 const byLabel = b => b === "Eu" && MODE === "davi" ? "Dono" : b;
 const stamp = o => { o.u = Date.now(); o.ub = ME(); return o; };
-let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas", prevSeen:0, mOpen:null, mNew:false, mq:"", mt:"", ct:"lista", cOpen:null, cNew:false, cq:"", cfT:"", cfS:"" };
+let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas", prevSeen:0, mOpen:null, mNew:false, mq:"", mt:"", ct:"lista", cOpen:null, cNew:false, cq:"", cfT:"", cfS:"", kt:"rev", kOpen:null, kType:null, kNew:false, kNewType:false, kq:"", kfT:"" };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const initial = n => (n.trim()[0] || "?").toUpperCase();
-const target = id => id === "boss" ? state.boss : id === "stock" ? state.stock : id === "maint" ? state.maint : id === "sales" ? state.crm : state.people.find(p => p.id === id);
+const target = id => id === "boss" ? state.boss : id === "stock" ? state.stock : id === "maint" ? state.maint : id === "sales" ? state.crm : id === "check" ? state.check : state.people.find(p => p.id === id);
 
 /* ---------- bonificação ---------- */
 function calc(p, mk){
@@ -401,7 +418,7 @@ function calc(p, mk){
 
 /* ---------- árvore ---------- */
 function card(p, id){
-  const boss = id === "boss", side = id === "stock" || id === "maint" || id === "sales";
+  const boss = id === "boss", side = id === "stock" || id === "maint" || id === "sales" || id === "check";
   const el = document.createElement("div");
   el.className = "node" + (boss ? " boss" : side ? " side" : "");
   el.dataset.id = id;
@@ -422,6 +439,11 @@ function card(p, id){
     extra = urg ? `<div class="badge bad">🔴 ${urg} urgente${urg > 1 ? "s" : ""}</div>` : "";
     extra += late ? `<div class="badge bad">⏰ ${late} atrasada${late > 1 ? "s" : ""}</div>` : "";
     extra += newBadge("maint");
+  } else if (id === "check") {
+    const k = checkStats(p);
+    bar = k.pct; l = `${k.month} revisão${k.month === 1 ? "" : "ões"} no mês`; r = `${k.types} modelos`;
+    extra = k.pendOS ? `<div class="badge bad">⚠ ${k.pendOS} com problema sem OS</div>` : (k.doing ? `<div class="badge">⏳ ${k.doing} em andamento</div>` : "");
+    extra += newBadge("check");
   } else if (id === "sales") {
     const k = salesStats(p);
     bar = k.n ? Math.round(p.leads.filter(x => x.stage === "ganho").length / k.n * 100) : 0; l = `${k.active} no funil`; r = brl(k.pipe);
@@ -432,7 +454,7 @@ function card(p, id){
     bar = Math.round(c.pct); l = "Nota do mês"; r = bar + "%";
     if (p.bonus.on) extra = `<div class="badge">💰 ${brl(c.money)}</div>`;
   }
-  const icon = boss ? "🧠" : id === "stock" ? "📦" : id === "maint" ? "🔧" : id === "sales" ? "🤝" : esc(initial(p.name));
+  const icon = boss ? "🧠" : id === "stock" ? "📦" : id === "maint" ? "🔧" : id === "sales" ? "🤝" : id === "check" ? "📋" : esc(initial(p.name));
   el.innerHTML = `
     <div class="avatar">${icon}</div>
     <h3>${esc(p.name)}</h3>
@@ -449,6 +471,7 @@ const seenKey = id => "seen-" + id;
 const getSeen = id => { try { return +localStorage.getItem(seenKey(id)) || 0; } catch(e) { return 0; } };
 function newFromDavi(id){
   const seen = getSeen(id);
+  if (id === "check") return state.check.items.filter(i => i.k === "rec" && i.ub === "Davi" && i.u > seen).length;
   return id === "stock" ? state.stock.moves.filter(m => m.by === "Davi" && Date.parse(m.date) > seen).length
     : state.maint.items.filter(i => i.ub === "Davi" && i.u > seen).length;
 }
@@ -458,11 +481,11 @@ function render(){
   const rw = $("#rootWrap"), row = $("#row");
   rw.innerHTML = ""; row.innerHTML = "";
   const hub = document.createElement("div"); hub.className = "hub"; hub.id = "hub";
-  if (MODE === "davi") hub.append(cardFor("maint"), cardFor("stock"));
+  if (MODE === "davi") hub.append(cardFor("maint"), cardFor("check"), cardFor("stock"));
   else hub.append(cardFor("maint"), cardFor("boss"), cardFor("stock"));
   if (MODE !== "davi") {
     const top = document.createElement("div"); top.className = "topwrap";
-    top.appendChild(cardFor("sales")); rw.appendChild(top);
+    top.append(cardFor("sales"), cardFor("check")); rw.appendChild(top);
   }
   rw.appendChild(hub);
   if (MODE !== "davi") {
@@ -493,12 +516,13 @@ function drawLines(){
     out += `<polygon points="${x2-7},${y2-4} ${x2+7},${y2-4} ${x2},${y2+7}"/>`;
   });
   if (getComputedStyle($("#hub")).flexDirection === "row") {
-    const sn = document.querySelector('.node[data-id="sales"]');
-    if (sn) {
-      const r = sn.getBoundingClientRect(), x = b.left + b.width/2 - tr.left, tip = r.bottom - tr.top + 6;
-      out += `<path d="M${x},${b.top - tr.top} L${x},${tip + 8}"/>`;
-      out += `<polygon points="${x},${tip} ${x-7},${tip+11} ${x+7},${tip+11}"/>`;
-    }
+    const bx = b.left + b.width/2 - tr.left, by = b.top - tr.top;
+    ["sales", "check"].forEach(id => {
+      const n = document.querySelector(`.node[data-id="${id}"]`); if (!n) return;
+      const r = n.getBoundingClientRect(), x2 = r.left + r.width/2 - tr.left, tip = r.bottom - tr.top + 6, dy = (by - tip) / 2;
+      out += `<path d="M${bx},${by} C${bx},${by - dy} ${x2},${tip + 8 + dy} ${x2},${tip + 8}"/>`;
+      out += `<polygon points="${x2},${tip} ${x2-7},${tip+11} ${x2+7},${tip+11}"/>`;
+    });
     const y = b.top + b.height/2 - tr.top;
     [["maint", -1], ["stock", 1]].forEach(([id, d]) => {
       const n = document.querySelector(`.node[data-id="${id}"]`); if (!n) return;
@@ -522,9 +546,9 @@ function addPerson(){
 const panel = $("#panel");
 function openPanel(id, focusName){
   ui.prevSeen = 0;
-  if (MODE === "owner" && (id === "stock" || id === "maint")) { ui.prevSeen = getSeen(id); try { localStorage.setItem(seenKey(id), String(Date.now())); } catch(e) {} }
+  if (MODE === "owner" && (id === "stock" || id === "maint" || id === "check")) { ui.prevSeen = getSeen(id); try { localStorage.setItem(seenKey(id), String(Date.now())); } catch(e) {} }
   ui.id = id; ui.tab = "demanda"; ui.mk = monthKey(new Date()); ui.cur = todayIso();
-  ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas"; ui.mOpen = null; ui.mNew = false; ui.mq = ""; ui.mt = ""; ui.ct = "lista"; ui.cOpen = null; ui.cNew = false; ui.cq = ""; ui.cfT = ""; ui.cfS = "";
+  ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas"; ui.mOpen = null; ui.mNew = false; ui.mq = ""; ui.mt = ""; ui.ct = "lista"; ui.cOpen = null; ui.cNew = false; ui.cq = ""; ui.cfT = ""; ui.cfS = ""; ui.kt = "rev"; ui.kOpen = null; ui.kType = null; ui.kNew = false; ui.kNewType = false; ui.kq = ""; ui.kfT = "";
   renderPanel();
   panel.scrollTop = 0;
   panel.classList.add("open"); $("#overlay").classList.add("open");
@@ -537,7 +561,7 @@ function closePanel(){
 $("#overlay").onclick = closePanel;
 addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
 
-const ICONS = { boss:"🧠", stock:"📦", maint:"🔧", sales:"🤝" };
+const ICONS = { boss:"🧠", stock:"📦", maint:"🔧", sales:"🤝", check:"📋" };
 function header(p, icon){
   const bg = icon ? "linear-gradient(135deg,#7c5cff,#22d3ee)" : p.color;
   return `<div class="ph">
@@ -555,7 +579,7 @@ function renderPanel(){
   const sc = panel.scrollTop, id = ui.id, side = id in ICONS;
   panel.classList.toggle("wide", side);
   panel.style.setProperty("--c", side ? "var(--accent)" : p.color);
-  const body = id === "boss" ? bossHtml(p) : id === "stock" ? stockHtml(p) : id === "maint" ? maintHtml(p) : id === "sales" ? salesHtml(p) : empHtml(p);
+  const body = id === "boss" ? bossHtml(p) : id === "stock" ? stockHtml(p) : id === "maint" ? maintHtml(p) : id === "sales" ? salesHtml(p) : id === "check" ? checkHtml(p) : empHtml(p);
   panel.innerHTML = header(p, ICONS[id]) + body;
   panel.scrollTop = sc;
 }
@@ -830,6 +854,7 @@ function sideSubmit(form, fd, p){
   const kind = form.dataset.form;
   if (ui.id === "maint") return maintSubmit(form, fd, p);
   if (ui.id === "sales") return salesSubmit(form, fd, p);
+  if (ui.id === "check") return checkSubmit(form, fd, p);
   if (kind === "prod") {
     const name = (fd.get("text") || "").trim(); if (!name) return;
     const data = { name, sku:(fd.get("sku") || "").trim(), category:(fd.get("category") || "").trim(), unit:fd.get("unit") || "un",
@@ -871,6 +896,7 @@ panel.addEventListener("click", e => {
   if (ui.id === "stock" && stockClick(a, D, p)) return;
   if (ui.id === "maint" && maintClick(a, D, p)) return;
   if (ui.id === "sales" && salesClick(a, D, p)) return;
+  if (ui.id === "check" && checkClick(a, D, p)) return;
   if (a === "tab") { ui.tab = D.t; return renderPanel(); }
   if (a === "mnav") { ui.mk = shiftMonth(ui.mk, +D.d); return renderPanel(); }
   if (a === "day") { const i = item(); i.days[D.day] = !i.days[D.day]; if (!i.days[D.day]) delete i.days[D.day]; return refresh(); }
@@ -901,6 +927,7 @@ panel.addEventListener("input", e => {
   const f = e.target.dataset.f, p = target(ui.id);
   if (f === "q") { ui.q = e.target.value; const l = $("#stlist"); if (l) l.innerHTML = stockList(); return; }
   if (f === "mq") { ui.mq = e.target.value; const l = $("#mlist"); if (l) l.innerHTML = maintList(); return; }
+  if (f === "kq") { ui.kq = e.target.value; const l = $("#klist"); if (l) l.innerHTML = checkList(); return; }
   if (f === "cq") { ui.cq = e.target.value; const l = $("#clist"); if (l) l.innerHTML = salesList(); return; }
   if (f !== "name" && f !== "role") return;
   if (f === "name") p.name = e.target.value || "Sem nome"; else p.role = e.target.value;
@@ -909,10 +936,11 @@ panel.addEventListener("input", e => {
   old.replaceWith(cardFor(ui.id)); drawLines();
 });
 panel.addEventListener("change", e => {
-  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role" || f === "q" || f === "mq" || f === "cq") return;
+  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role" || f === "q" || f === "mq" || f === "cq" || f === "kq") return;
   if (ui.id === "stock") return sideChange(e, f);
   if (ui.id === "maint") return maintChange(e, f, p);
   if (ui.id === "sales") return salesChange(e, f, p);
+  if (ui.id === "check") return checkChange(e, f, p);
   const v = Math.max(0, +e.target.value || 0);
   if (f === "amount" || f === "min") p.bonus[f] = v;
   else { const i = p.items.find(x => x.id === e.target.dataset.id); i[f] = v; }
@@ -921,7 +949,7 @@ panel.addEventListener("change", e => {
 panel.addEventListener("submit", e => {
   e.preventDefault();
   const p = target(ui.id), fd = new FormData(e.target), text = (fd.get("text") || "").trim();
-  if (ui.id === "stock" || ui.id === "maint" || ui.id === "sales") return sideSubmit(e.target, fd, p);
+  if (ui.id === "stock" || ui.id === "maint" || ui.id === "sales" || ui.id === "check") return sideSubmit(e.target, fd, p);
   if (!text) return;
   if (e.target.dataset.form === "task") {
     p.tasks.push({ id:uid(), text, date:fd.get("date") || ui.cur, time:fd.get("time") || "", done:false });
@@ -966,11 +994,12 @@ async function api(method, body, action){
 }
 
 function applyServer(d){
-  const snap = () => JSON.stringify([state.stock, state.maint, MODE === "owner" ? [state.boss, state.people, state.crm] : 0]);
+  const snap = () => JSON.stringify([state.stock, state.maint, state.check, MODE === "owner" ? [state.boss, state.people, state.crm] : 0]);
   const before = snap();
   const davi = MODE === "davi";
   state.stock = Merge.mergeShared(d.stock, state.stock, davi);
   state.maint = Merge.mergeShared(d.maint, state.maint, davi);
+  state.check = Merge.mergeShared(d.check, state.check, davi);
   if (MODE === "owner") {
     if (d.core && (+d.core.u || 0) > coreU) { state.boss = d.core.boss; state.people = d.core.people; state.crm = d.core.crm || state.crm; coreU = +d.core.u; }
     state.davi = d.davi;
@@ -1003,8 +1032,8 @@ async function push(){
   if (syncing) { again = true; return; }
   syncing = true;
   const body = MODE === "owner"
-    ? { core:{ boss:state.boss, people:state.people, crm:state.crm, u:coreU || Date.now() }, stock:state.stock, maint:state.maint }
-    : { stock:state.stock, maint:state.maint };
+    ? { core:{ boss:state.boss, people:state.people, crm:state.crm, u:coreU || Date.now() }, stock:state.stock, maint:state.maint, check:state.check }
+    : { stock:state.stock, maint:state.maint, check:state.check };
   try { applyServer(await api("PUT", body)); setSync("☁ Sincronizado", "ok"); } catch(e) { syncError(e); }
   syncing = false;
   if (again) { again = false; push(); }
@@ -1024,7 +1053,7 @@ async function boot(){
   try { if (k) localStorage.setItem(SK, k); else k = localStorage.getItem(SK) || ""; } catch(e) {}
   if (params.has("k")) history.replaceState(null, "", location.pathname);
 
-  if (location.protocol === "file:" || params.has("local")) { state = load(); render(); return; }
+  if (location.protocol === "file:" || params.has("local")) { state = load(); render(); showAgenda(); return; }
   if (!k) return showLocked(false);
   KEYV = k;
 
@@ -1057,8 +1086,40 @@ async function boot(){
   if (d) { if (MODE === "owner") state.davi = d.davi; applyServer(d); }
   render();
   push();
+  showAgenda();
   setInterval(() => { if (!document.hidden && !syncing) pull(); }, 12000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
+}
+
+/* ---------- agenda de hoje (pop-up ao abrir) ---------- */
+let agendaShown = false;
+function showAgenda(){
+  if (MODE === "davi" || agendaShown || !state || !state.boss) return;
+  agendaShown = true;
+  agendaModal();
+}
+function agendaModal(){
+  const t = todayIso(), tom = addDays(t, 1), tk = state.boss.tasks;
+  const byTime = (a, b) => (a.time || "99").localeCompare(b.time || "99");
+  const today = tk.filter(x => x.date === t).sort(byTime);
+  const late = tk.filter(x => x.date < t && !x.done).sort((a, b) => a.date.localeCompare(b.date) || byTime(a, b));
+  const next = tk.filter(x => x.date === tom).sort(byTime);
+  if (!today.length && !late.length) { modal.classList.remove("open"); return; }
+  const li = (x, showDate) => `<li class="${x.done ? "done" : ""}"><button class="dotc ${x.done ? "on" : ""}" data-ag="${x.id}" aria-label="Marcar"></button>
+    <span class="tm">${x.time || "—"}</span><div class="t">${esc(x.text)}${showDate ? `<small>${fmtD(x.date)}</small>` : ""}</div></li>`;
+  const pend = today.filter(x => !x.done).length;
+  modal.innerHTML = `<div class="box"><h3>📅 ${fmtLong(t)}</h3>
+    <p style="margin:0;color:var(--muted);font-size:.9rem">${pend ? `Você tem <b style="color:var(--text)">${pend}</b> demanda${pend > 1 ? "s" : ""} para hoje.` : "Tudo de hoje já está feito. 🎉"}</p>
+    ${late.length ? `<div class="sub" style="color:var(--danger)">⚠ Atrasadas (${late.length})</div><ul class="ag">${late.map(x => li(x, true)).join("")}</ul>` : ""}
+    ${today.length ? `<div class="sub">Hoje (${today.length})</div><ul class="ag">${today.map(x => li(x)).join("")}</ul>` : ""}
+    ${next.length ? `<div class="sub" style="opacity:.7">Amanhã (${next.length})</div><ul class="ag" style="opacity:.7">${next.map(x => li(x)).join("")}</ul>` : ""}
+    <div class="row2"><button class="btn primary" id="agopen">Abrir calendário</button><button class="btn" id="agclose">Fechar</button></div></div>`;
+  modal.classList.add("open");
+  modal.querySelectorAll("[data-ag]").forEach(b => b.onclick = () => {
+    const x = tk.find(y => y.id === b.dataset.ag); x.done = !x.done; save(); render(); agendaModal();
+  });
+  $("#agclose").onclick = () => modal.classList.remove("open");
+  $("#agopen").onclick = () => { modal.classList.remove("open"); openPanel("boss"); ui.view = "dia"; ui.cur = t; renderPanel(); };
 }
 
 /* ---------- acesso do Davi ---------- */
