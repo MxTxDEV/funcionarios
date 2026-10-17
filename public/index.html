@@ -216,6 +216,15 @@ ul.cks li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12
 ul.cks li.nc{border-color:#fb718588;background:#2a1f3a}
 ul.cks .t{flex:1 1 220px}ul.cks .t input{width:100%}
 ul.cks .note{flex:1 1 100%;font-size:.85rem}
+.dotc.big{width:34px;height:34px;font-size:1rem}
+.dotc.nc{background:var(--danger);border-color:var(--danger)}.dotc.nc::after{content:"!";font-weight:800;color:#fff}
+.dotc.na{border-style:dashed}.dotc.na::after{content:"–";color:var(--muted)}
+.kpick{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto}
+.kopt{background:var(--bg);border:1px solid #2c3260;border-radius:16px;padding:10px 14px;text-align:left;display:flex;flex-direction:column;gap:2px;color:var(--text)}
+.kopt:hover{border-color:var(--accent)}.kopt small{color:var(--muted);font-size:.75rem}
+.chip{background:var(--bg);border:1px solid var(--accent);border-radius:999px;padding:8px 8px 8px 16px;display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.chip small{color:var(--muted);font-weight:400}
+body.davi .topwrap{display:none!important}
 .seg3{display:flex;gap:6px;flex-wrap:wrap}
 .seg3 button{background:var(--bg);border:1px solid #2c3260;border-radius:999px;padding:8px 13px;font-size:.82rem;color:var(--muted);font-weight:600}
 .seg3 button:disabled{opacity:.3;cursor:default}
@@ -387,7 +396,7 @@ let MODE = "local";
 const ME = () => MODE === "davi" ? "Davi" : "Eu";
 const byLabel = b => b === "Eu" && MODE === "davi" ? "Dono" : b;
 const stamp = o => { o.u = Date.now(); o.ub = ME(); return o; };
-let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas", prevSeen:0, mOpen:null, mNew:false, mq:"", mt:"", ct:"lista", cOpen:null, cNew:false, cq:"", cfT:"", cfS:"", kt:"rev", kOpen:null, kType:null, kNew:false, kNewType:false, kq:"", kfT:"" };
+let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas", prevSeen:0, mOpen:null, mNew:false, mq:"", mt:"", ct:"lista", cOpen:null, cNew:false, cq:"", cfT:"", cfS:"", kt:"rev", kOpen:null, kType:null, kNew:false, kNewType:false, kq:"", kfT:"", kPick:null, ks:"" };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -545,10 +554,11 @@ function addPerson(){
 /* ---------- painel ---------- */
 const panel = $("#panel");
 function openPanel(id, focusName){
+  if (MODE === "davi" && !["stock", "maint", "check"].includes(id)) return;
   ui.prevSeen = 0;
   if (MODE === "owner" && (id === "stock" || id === "maint" || id === "check")) { ui.prevSeen = getSeen(id); try { localStorage.setItem(seenKey(id), String(Date.now())); } catch(e) {} }
   ui.id = id; ui.tab = "demanda"; ui.mk = monthKey(new Date()); ui.cur = todayIso();
-  ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas"; ui.mOpen = null; ui.mNew = false; ui.mq = ""; ui.mt = ""; ui.ct = "lista"; ui.cOpen = null; ui.cNew = false; ui.cq = ""; ui.cfT = ""; ui.cfS = ""; ui.kt = "rev"; ui.kOpen = null; ui.kType = null; ui.kNew = false; ui.kNewType = false; ui.kq = ""; ui.kfT = "";
+  ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas"; ui.mOpen = null; ui.mNew = false; ui.mq = ""; ui.mt = ""; ui.ct = "lista"; ui.cOpen = null; ui.cNew = false; ui.cq = ""; ui.cfT = ""; ui.cfS = ""; ui.kt = "rev"; ui.kOpen = null; ui.kType = null; ui.kNew = false; ui.kNewType = false; ui.kq = ""; ui.kfT = ""; ui.kPick = null; ui.ks = "";
   renderPanel();
   panel.scrollTop = 0;
   panel.classList.add("open"); $("#overlay").classList.add("open");
@@ -927,6 +937,7 @@ panel.addEventListener("input", e => {
   const f = e.target.dataset.f, p = target(ui.id);
   if (f === "q") { ui.q = e.target.value; const l = $("#stlist"); if (l) l.innerHTML = stockList(); return; }
   if (f === "mq") { ui.mq = e.target.value; const l = $("#mlist"); if (l) l.innerHTML = maintList(); return; }
+  if (f === "ks") { ui.ks = e.target.value; const l = $("#kpick"); if (l) l.innerHTML = pickList(); return; }
   if (f === "kq") { ui.kq = e.target.value; const l = $("#klist"); if (l) l.innerHTML = checkList(); return; }
   if (f === "cq") { ui.cq = e.target.value; const l = $("#clist"); if (l) l.innerHTML = salesList(); return; }
   if (f !== "name" && f !== "role") return;
@@ -936,7 +947,7 @@ panel.addEventListener("input", e => {
   old.replaceWith(cardFor(ui.id)); drawLines();
 });
 panel.addEventListener("change", e => {
-  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role" || f === "q" || f === "mq" || f === "cq" || f === "kq") return;
+  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role" || f === "q" || f === "mq" || f === "cq" || f === "kq" || f === "ks") return;
   if (ui.id === "stock") return sideChange(e, f);
   if (ui.id === "maint") return maintChange(e, f, p);
   if (ui.id === "sales") return salesChange(e, f, p);

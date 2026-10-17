@@ -39,35 +39,47 @@ function checkHtml(c){
   const k = checkStats(c);
   const kp = (l, v, cl = "") => `<div class="kpi ${cl}"><small>${l}</small><b>${v}</b></div>`;
   let h = `<div class="kpis">${kp("Revisões no mês", k.month)}${kp("Em andamento", k.doing)}${kp("Conformes (mês)", k.pct + "%")}
-    ${kp("Com problemas (mês)", k.problemas, k.problemas ? "warn" : "")}${kp("Sem OS aberta", k.pendOS, k.pendOS ? "warn" : "")}${kp("Modelos de checklist", k.types)}</div>`;
+    ${kp("Com problemas (mês)", k.problemas, k.problemas ? "warn" : "")}${kp("Sem OS aberta", k.pendOS, k.pendOS ? "warn" : "")}${kp("Equipamentos cadastrados", k.types)}</div>`;
   h += `<div class="tabs"><button data-act="ktab" data-t="rev" class="${ui.kt === "rev" ? "on" : ""}">Revisões</button>
-    <button data-act="ktab" data-t="mod" class="${ui.kt === "mod" ? "on" : ""}">Modelos de checklist</button></div>`;
+    <button data-act="ktab" data-t="mod" class="${ui.kt === "mod" ? "on" : ""}">Equipamentos</button></div>`;
   if (ui.kt === "mod") {
-    h += `<div class="addform"><span class="meta" style="flex:1;align-self:center">Cadastre cada tipo de equipamento e os pontos que precisam ser conferidos.</span>
-      <button class="btn primary" data-act="knewtype">${ui.kNewType ? "Fechar" : "+ Novo modelo"}</button></div>`;
+    h += `<div class="addform"><span class="meta" style="flex:1;align-self:center">Cadastre cada equipamento com o checklist dele. Cada equipamento tem os seus próprios itens.</span>
+      <button class="btn primary" data-act="knewtype">${ui.kNewType ? "Fechar" : "+ Novo equipamento"}</button></div>`;
     if (ui.kNewType) h += `<form class="pf" data-form="ktype">
-      <label class="fld wide">Tipo de equipamento *<input type="text" name="text" required placeholder="Ex.: Betoneira, Compressor, Andaime…"></label>
-      <label class="fld wide">Pontos do checklist (um por linha)<textarea name="pts" rows="6" placeholder="Estado do motor&#10;Nível de óleo&#10;Correia e polias&#10;Proteções e carenagens&#10;Cabo de energia e plugue"></textarea></label>
-      <div class="bt"><button type="button" class="btn" data-act="knewtype">Cancelar</button><button type="submit" class="btn primary">Criar modelo</button></div></form>`;
+      <label class="fld wide">Nome do equipamento *<input type="text" name="text" required placeholder="Ex.: Betoneira, Compactador, Andaime…"></label>
+      <label class="fld wide">Itens do checklist (um por linha)<textarea name="pts" rows="6" placeholder="Estado do motor&#10;Nível de óleo&#10;Correia e polias&#10;Proteções e carenagens&#10;Cabo de energia e plugue"></textarea></label>
+      <div class="bt"><button type="button" class="btn" data-act="knewtype">Cancelar</button><button type="submit" class="btn primary">Cadastrar equipamento</button></div></form>`;
     const ts = kTypes();
     h += ts.length ? `<ul>${ts.map(t => `<li class="clk" data-act="ktopen" data-id="${t.id}"><div class="t"><b>${esc(t.name)}</b>
-      <small>${t.pts.length} ponto${t.pts.length === 1 ? "" : "s"} · ${kRecs().filter(r => r.tid === t.id).length} revisão(ões) feita(s)</small></div><span class="meta">abrir ›</span></li>`).join("")}</ul>`
-      : `<div class="empty">Nenhum modelo ainda.<br>Crie o primeiro, por exemplo “Betoneira”.</div>`;
+      <small>${t.pts.length} item${t.pts.length === 1 ? "" : "s"} no checklist · ${kRecs().filter(r => r.tid === t.id).length} revisão(ões) feita(s)</small></div><span class="meta">abrir ›</span></li>`).join("")}</ul>`
+      : `<div class="empty">Nenhum equipamento cadastrado.<br>Cadastre o primeiro, por exemplo “Betoneira”.</div>`;
     return h;
   }
-  h += `<div class="addform"><input type="text" data-f="kq" placeholder="Buscar equipamento, identificação, local…" value="${esc(ui.kq)}" autocomplete="off">
-    <select data-f="kf" aria-label="Tipo"><option value="">Todos os equipamentos</option>${kTypes().map(t => `<option value="${t.id}" ${t.id === ui.kfT ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select>
+  h += `<div class="addform"><input type="text" data-f="kq" placeholder="Buscar nas revisões: equipamento, número, local…" value="${esc(ui.kq)}" autocomplete="off">
+    <select data-f="kf" aria-label="Equipamento"><option value="">Todos os equipamentos</option>${kTypes().map(t => `<option value="${t.id}" ${t.id === ui.kfT ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select>
     <button class="btn primary" data-act="knew">${ui.kNew ? "Fechar" : "+ Nova revisão"}</button></div>`;
-  if (ui.kNew) {
-    const ts = kTypes();
-    h += ts.length ? `<form class="pf" data-form="krec">
-      <label class="fld wide">Qual equipamento será revisado? *<select name="tid" required>${ts.map(t => `<option value="${t.id}">${esc(t.name)} (${t.pts.length} pontos)</option>`).join("")}</select></label>
-      <label class="fld">Identificação (nº, patrimônio, placa)<input type="text" name="ident"></label>
-      <label class="fld">Local / obra<input type="text" name="loc"></label>
-      <div class="bt"><button type="button" class="btn" data-act="knew">Cancelar</button><button type="submit" class="btn primary">Iniciar revisão</button></div></form>`
-      : `<div class="warn">Antes de fazer uma revisão, cadastre o modelo do equipamento na aba “Modelos de checklist”.</div>`;
-  }
+  if (ui.kNew) h += newRecForm();
   return h + `<div id="klist">${checkList()}</div>`;
+}
+
+function pickList(){
+  const q = ui.ks.trim().toLowerCase();
+  const ts = kTypes().filter(t => !q || t.name.toLowerCase().includes(q));
+  return ts.map(t => `<button type="button" class="kopt" data-act="kpick" data-id="${t.id}"><b>${esc(t.name)}</b><small>${t.pts.length} itens no checklist</small></button>`).join("")
+    || `<div class="empty" style="padding:10px 0">Nenhum equipamento encontrado.</div>`;
+}
+
+function newRecForm(){
+  if (!kTypes().length) return `<div class="warn">Antes de fazer uma revisão, cadastre o equipamento e o checklist dele na aba “Equipamentos”.</div>`;
+  const t = ui.kPick && state.check.items.find(x => x.id === ui.kPick);
+  if (!t) return `<div class="pf"><label class="fld wide">Buscar equipamento<input type="text" data-f="ks" placeholder="Digite: betoneira, compactador…" value="${esc(ui.ks)}" autocomplete="off"></label>
+    <div class="fld wide kpick" id="kpick">${pickList()}</div></div>`;
+  return `<form class="pf" data-form="krec"><input type="hidden" name="tid" value="${t.id}">
+    <div class="fld wide"><div class="chip">🛠 ${esc(t.name)} <small>· ${t.pts.length} itens no checklist</small> <button type="button" data-act="kunpick" class="ib" aria-label="Trocar equipamento">✕</button></div></div>
+    <label class="fld">Número do equipamento *<input type="text" name="ident" required placeholder="Ex.: 02, BET-02, patrimônio…"></label>
+    <label class="fld">Local / obra<input type="text" name="loc"></label>
+    <label class="fld wide">Observação<textarea name="obs" rows="2" placeholder="Opcional"></textarea></label>
+    <div class="bt"><button type="button" class="btn" data-act="knew">Cancelar</button><button type="submit" class="btn primary">Iniciar revisão</button></div></form>`;
 }
 
 function checkList(){
@@ -84,19 +96,26 @@ function checkList(){
 }
 
 /* ---------- revisão em andamento ---------- */
+const sameEquip = (a, b) => a.tid === b.tid && (a.ident || "").trim().toLowerCase() === (b.ident || "").trim().toLowerCase();
+
 function recDetail(r){
   const s = recStats(r), answered = s.total - s.pend, done = r.status === "concluida";
+  const title = r.tname + (r.ident ? " nº " + r.ident : "");
   let h = `<div class="nav"><button data-act="kback">← Voltar</button>
-    <div class="ttl">${esc(r.tname)}${r.ident ? " · " + esc(r.ident) : ""} <span class="pill ${done ? "ok" : "warn"}">${done ? "Concluída" : "Em andamento"}</span></div><span style="width:44px"></span></div>`;
+    <div class="ttl">${esc(title)} <span class="pill ${done ? "ok" : "warn"}">${done ? "Concluída" : "Em andamento"}</span></div><span style="width:44px"></span></div>`;
   h += `<div class="meta">Início ${kfmt(r.sd)}${r.ed ? " · término " + kfmt(r.ed) : ""} · ${esc(byLabel(r.by))}${r.loc ? " · " + esc(r.loc) : ""}</div>`;
-  h += `<div class="kpis">${[["Conformes", s.ok, ""], ["Problemas", s.nc, s.nc ? "warn" : ""], ["N/A", s.na, ""], ["Pendentes", s.pend, s.pend ? "warn" : ""]].map(([l, v, c]) =>
+  const prev = kRecs().filter(x => x.id !== r.id && sameEquip(x, r));
+  if (prev.length) { const p = prev[0], ps = recStats(p); h += `<div class="meta">Última revisão deste equipamento: ${kfmt(p.sd)} — ${ps.ok} OK${ps.nc ? `, <b style="color:var(--danger)">${ps.nc} problema(s)</b>` : ""}</div>`; }
+  h += `<div class="kpis">${[["Feitos (OK)", s.ok, ""], ["Problemas", s.nc, s.nc ? "warn" : ""], ["N/A", s.na, ""], ["Pendentes", s.pend, s.pend ? "warn" : ""]].map(([l, v, c]) =>
     `<div class="kpi ${c}"><small>${l}</small><b>${v}</b></div>`).join("")}</div>
     <div class="bar" style="margin:0"><i style="width:${s.total ? answered / s.total * 100 : 0}%"></i></div>`;
-  if (!r.pts.length) h += `<div class="warn">Este modelo não tem pontos de checklist. Cadastre-os na aba “Modelos de checklist”.</div>`;
-  h += `<div class="row2"><button class="btn" data-act="kallok">✔ Marcar tudo que falta como OK</button></div>`;
-  h += `<ul class="cks">${r.pts.map((p, n) => { const a = r.ans[p.id] || {}; return `<li class="${a.s === "nc" ? "nc" : ""}">
-    <div class="t"><b>${n + 1}.</b> ${esc(p.text)}</div>
-    <div class="seg3">${Object.keys(ANS).map(k => `<button data-act="kans" data-p="${p.id}" data-v="${k}" class="${a.s === k ? "on " + k : ""}" title="${ansLabel[k]}">${ANS[k][0]}</button>`).join("")}</div>
+  if (!r.pts.length) h += `<div class="warn">Este equipamento não tem itens no checklist. Cadastre-os na aba “Equipamentos”.</div>`;
+  h += `<div class="row2"><button class="btn" data-act="kallok">✔ Marcar tudo que falta como feito (OK)</button></div>`;
+  h += `<ul class="cks">${r.pts.map(p => { const a = r.ans[p.id] || {}; return `<li class="${a.s === "nc" ? "nc" : ""}">
+    <button class="dotc big ${a.s === "ok" ? "on" : a.s === "nc" ? "nc" : a.s === "na" ? "na" : ""}" data-act="kans" data-p="${p.id}" data-v="ok" aria-label="Marcar como feito"></button>
+    <div class="t">${esc(p.text)}</div>
+    <div class="seg3"><button data-act="kans" data-p="${p.id}" data-v="nc" class="${a.s === "nc" ? "on nc" : ""}">⚠ Problema</button>
+      <button data-act="kans" data-p="${p.id}" data-v="na" class="${a.s === "na" ? "on na" : ""}">N/A</button></div>
     ${a.s === "nc" || a.note ? `<input type="text" class="note" data-f="kn" data-p="${p.id}" value="${esc(a.note || "")}" placeholder="O que está errado? (observação)">` : ""}</li>`; }).join("")}</ul>`;
   h += `<label class="fld">Observações gerais<textarea data-f="kobs" rows="3">${esc(r.obs)}</textarea></label>`;
   if (s.nc && r.os) h += `<div class="warn">Já existe uma OS de manutenção para esta revisão: ${osNum(r.osn)}.</div>`;
@@ -104,22 +123,25 @@ function recDetail(r){
     ? `<button class="btn" data-act="kreopen">Reabrir revisão</button>`
     : `<button class="btn primary" data-act="kfinish">Finalizar revisão</button>`}
     ${s.nc && !r.os ? `<button class="btn" data-act="kos" style="color:var(--gold)">🔧 Abrir OS de manutenção com os problemas</button>` : ""}</div>`;
+  if (prev.length) h += `<div class="sec"><h4>📜 O que já foi feito neste equipamento</h4><ul>${prev.slice(0, 15).map(x => { const xs = recStats(x); return `<li class="clk" data-act="kopen" data-id="${x.id}">
+    <div class="t"><b>${kfmt(x.sd)}</b> <span class="pill ok">${xs.ok} OK</span> ${xs.nc ? `<span class="pill bad">${xs.nc} problema(s)</span>` : ""}
+    <small>${esc(byLabel(x.by))}${x.loc ? " · " + esc(x.loc) : ""}${x.obs ? " · " + esc(x.obs) : ""}</small></div></li>`; }).join("")}</ul></div>`;
   return h + `<button class="danger" data-act="kdel">Excluir esta revisão</button>`;
 }
 
 /* ---------- modelo de checklist ---------- */
 function typeDetail(t){
-  let h = `<div class="nav"><button data-act="kback">← Voltar</button><div class="ttl">Modelo de checklist</div><span style="width:44px"></span></div>`;
-  h += `<label class="fld">Tipo de equipamento<input type="text" data-f="ktn" value="${esc(t.name)}"></label>
-    <div class="sub">Pontos a conferir (${t.pts.length})</div>
+  let h = `<div class="nav"><button data-act="kback">← Voltar</button><div class="ttl">Equipamento e checklist</div><span style="width:44px"></span></div>`;
+  h += `<label class="fld">Nome do equipamento<input type="text" data-f="ktn" value="${esc(t.name)}"></label>
+    <div class="sub">Itens do checklist (${t.pts.length})</div>
     <ul class="cks">${t.pts.map((p, n) => `<li><div class="t"><input type="text" data-f="ktp" data-p="${p.id}" value="${esc(p.text)}"></div>
       <div class="seg3"><button data-act="kup" data-p="${p.id}" ${n === 0 ? "disabled" : ""} aria-label="Subir">▲</button>
       <button data-act="kdown" data-p="${p.id}" ${n === t.pts.length - 1 ? "disabled" : ""} aria-label="Descer">▼</button>
       <button data-act="kptdel" data-p="${p.id}" aria-label="Remover">✕</button></div></li>`).join("") || `<div class="empty">Nenhum ponto ainda.</div>`}</ul>
-    <form class="pf" data-form="kpt"><label class="fld wide">Adicionar pontos (um por linha)<textarea name="pts" rows="4" placeholder="Ex.:&#10;Freio de segurança&#10;Aterramento elétrico"></textarea></label>
+    <form class="pf" data-form="kpt"><label class="fld wide">Adicionar itens (um por linha)<textarea name="pts" rows="4" placeholder="Ex.:&#10;Freio de segurança&#10;Aterramento elétrico"></textarea></label>
       <div class="bt"><button type="submit" class="btn primary">+ Adicionar ao checklist</button></div></form>
-    <div class="meta">Mudanças no modelo valem para as próximas revisões. As revisões já feitas mantêm os pontos que tinham.</div>
-    <button class="danger" data-act="ktdel">Excluir este modelo</button>`;
+    <div class="meta">Mudanças no checklist valem para as próximas revisões. As revisões já feitas mantêm os itens que tinham.</div>
+    <button class="danger" data-act="ktdel">Excluir este equipamento</button>`;
   return h;
 }
 
@@ -129,8 +151,10 @@ const curRec = () => state.check.items.find(x => x.id === ui.kOpen);
 const curType = () => state.check.items.find(x => x.id === ui.kType);
 
 function checkClick(a, D, c){
-  if (a === "ktab") { ui.kt = D.t; ui.kNew = false; ui.kNewType = false; renderPanel(); return true; }
-  if (a === "knew") { ui.kNew = !ui.kNew; renderPanel(); return true; }
+  if (a === "ktab") { ui.kt = D.t; ui.kNew = false; ui.kNewType = false; ui.kPick = null; ui.ks = ""; renderPanel(); return true; }
+  if (a === "kpick") { ui.kPick = D.id; renderPanel(); const i = panel.querySelector('[name=ident]'); if (i) i.focus(); return true; }
+  if (a === "kunpick") { ui.kPick = null; renderPanel(); return true; }
+  if (a === "knew") { ui.kNew = !ui.kNew; ui.kPick = null; ui.ks = ""; renderPanel(); return true; }
   if (a === "knewtype") { ui.kNewType = !ui.kNewType; renderPanel(); return true; }
   if (a === "kopen") { ui.kOpen = D.id; renderPanel(); panel.scrollTop = 0; return true; }
   if (a === "ktopen") { ui.kType = D.id; renderPanel(); panel.scrollTop = 0; return true; }
@@ -170,7 +194,7 @@ function checkClick(a, D, c){
     if (a === "kdown") { mv(1); return true; }
     if (a === "kptdel") { t.pts = t.pts.filter(x => x.id !== D.p); stamp(t); refresh(); return true; }
     if (a === "ktdel") {
-      if (!confirm(`Excluir o modelo "${t.name}"? As revisões já feitas continuam no histórico.`)) return true;
+      if (!confirm(`Excluir o equipamento "${t.name}" e o checklist dele? As revisões já feitas continuam no histórico.`)) return true;
       c.items = c.items.filter(x => x !== t); c.del[t.id] = Date.now(); ui.kType = null; refresh(); return true;
     }
   }
@@ -196,9 +220,9 @@ function checkSubmit(form, fd, c){
   }
   if (kind === "krec") {
     const t = c.items.find(x => x.id === fd.get("tid")); if (!t) return;
-    const r = normCheck({ items:[{ id:uid(), k:"rec", tid:t.id, tname:t.name, ident:g("ident"), loc:g("loc"),
+    const r = normCheck({ items:[{ id:uid(), k:"rec", tid:t.id, tname:t.name, ident:g("ident"), loc:g("loc"), obs:g("obs"),
       pts:t.pts.map(p => ({ id:p.id, text:p.text })), by:ME(), c:Date.now() }] }).items[0];
-    stamp(r); c.items.push(r); ui.kNew = false; ui.kOpen = r.id; refresh(); panel.scrollTop = 0; return;
+    stamp(r); c.items.push(r); ui.kNew = false; ui.kPick = null; ui.ks = ""; ui.kOpen = r.id; refresh(); panel.scrollTop = 0; return;
   }
   if (kind === "kpt" && ui.kType) {
     const t = curType(); if (!t) return;
