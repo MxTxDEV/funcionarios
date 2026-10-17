@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minha Equipe</title>
+<style>
+:root{
+  --bg:#0f1220; --bg2:#171b30; --card:#1e2340; --line:#6c7bff; --text:#eef0ff; --muted:#9aa3d0;
+  --accent:#7c5cff; --accent2:#22d3ee; --ok:#34d399; --danger:#fb7185; --radius:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);
+  background:radial-gradient(1200px 700px at 50% -10%,#2a2f66 0%,transparent 60%),var(--bg);
+  min-height:100vh;
+}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 28px;flex-wrap:wrap}
+header h1{margin:0;font-size:1.1rem;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border:0;color:var(--text)}
+.btn{padding:10px 18px;border-radius:999px;background:var(--bg2);border:1px solid #2c3260;transition:.2s}
+.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;font-weight:600}
+
+#tree{position:relative;padding:10px 24px 80px;max-width:1300px;margin:0 auto}
+#lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#lines path{fill:none;stroke:var(--line);stroke-width:2.5;stroke-linecap:round;opacity:.7;stroke-dasharray:6 7;animation:flow 1.2s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-26}}
+#lines polygon{fill:var(--line);opacity:.9}
+
+.root-wrap{display:flex;justify-content:center;margin-bottom:90px}
+.row{display:flex;flex-wrap:wrap;justify-content:center;gap:34px 28px}
+
+.node{
+  position:relative;background:var(--card);border-radius:var(--radius);padding:20px 22px;width:230px;text-align:center;
+  border:1px solid #2f3566;cursor:pointer;transition:.25s;box-shadow:0 10px 30px #0006;
+}
+.node:hover{transform:translateY(-5px);box-shadow:0 18px 40px #0008;border-color:var(--c,var(--accent))}
+.node .avatar{
+  width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;
+  font-size:1.5rem;font-weight:700;background:var(--c,var(--accent));box-shadow:0 0 0 5px #ffffff0f;
+}
+.node h3{margin:0;font-size:1.05rem}
+.node .role{color:var(--muted);font-size:.85rem;margin-top:2px;min-height:1.2em}
+.bar{height:7px;background:#ffffff14;border-radius:99px;margin-top:14px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c,var(--accent)),var(--accent2));border-radius:99px;transition:width .4s}
+.stats{display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem;margin-top:8px}
+.node.boss{
+  width:290px;padding:26px;border:1px solid #8b7bff;
+  background:linear-gradient(145deg,#2b2466,#1d2a5c);
+  box-shadow:0 0 60px #7c5cff55,0 14px 40px #0008;
+}
+.node.boss .avatar{width:84px;height:84px;font-size:2.4rem;background:linear-gradient(135deg,var(--accent),var(--accent2));animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 12px #7c5cff22,0 0 40px #22d3ee55}}
+.node.add{background:transparent;border:2px dashed #3a4180;display:grid;place-items:center;min-height:170px;color:var(--muted);box-shadow:none}
+.node.add:hover{color:var(--text);border-color:var(--accent)}
+.node.add span{font-size:2.4rem;line-height:1}
+
+/* painel lateral */
+#overlay{position:fixed;inset:0;background:#05061088;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:.25s;z-index:10}
+#overlay.open{opacity:1;pointer-events:auto}
+#panel{
+  position:fixed;top:0;right:0;height:100%;width:min(480px,100%);background:var(--bg2);z-index:11;
+  border-radius:32px 0 0 32px;padding:26px;overflow-y:auto;transform:translateX(105%);transition:.3s cubic-bezier(.2,.8,.2,1);
+  box-shadow:-20px 0 60px #0008;display:flex;flex-direction:column;gap:16px;
+}
+#panel.open{transform:none}
+.ph{display:flex;align-items:center;gap:14px}
+.ph .avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:1.3rem;flex:none}
+.ph .info{flex:1;min-width:0}
+.ph input{width:100%;background:transparent;border:0;border-bottom:1px dashed transparent;color:var(--text);font:inherit;padding:2px 0}
+.ph input:hover,.ph input:focus{border-bottom-color:#3a4180;outline:0}
+.ph input.name{font-size:1.25rem;font-weight:700}
+.ph input.rolei{color:var(--muted);font-size:.9rem}
+.x{background:#ffffff10;width:38px;height:38px;border-radius:50%;font-size:1.1rem}
+.x:hover{background:#ffffff22}
+.tabs{display:flex;background:var(--bg);border-radius:999px;padding:5px;gap:4px}
+.tabs button{flex:1;padding:9px;border-radius:999px;background:transparent;color:var(--muted);font-weight:600}
+.tabs button.on{background:var(--card);color:var(--text)}
+.addform{display:flex;gap:8px}
+.addform input[type=text]{flex:1;min-width:0;padding:12px 16px;border-radius:999px;border:1px solid #2c3260;background:var(--bg);color:var(--text);font:inherit}
+.addform input[type=date]{padding:10px 12px;border-radius:999px;border:1px solid #2c3260;background:var(--bg);color:var(--text);font:inherit;width:128px;flex:none;min-width:0;color-scheme:dark;font-size:.8rem}
+.addform input:focus{outline:0;border-color:var(--accent)}
+.addform .go{width:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:1.3rem;font-weight:700;flex:none}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+li{display:flex;align-items:center;gap:12px;background:var(--card);padding:13px 16px;border-radius:20px;border:1px solid #2a3060}
+li .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:transparent;flex:none;display:grid;place-items:center;font-size:.8rem;color:#06231a}
+li.done .chk{background:var(--ok);border-color:var(--ok)}
+li .t{flex:1;min-width:0;word-break:break-word}
+li.done .t{text-decoration:line-through;color:var(--muted)}
+li small{display:block;color:var(--muted);font-size:.75rem;margin-top:2px}
+li small.late{color:var(--danger)}
+li .del{background:transparent;color:var(--muted);font-size:1rem;width:28px;height:28px;border-radius:50%}
+li .del:hover{color:var(--danger);background:#ffffff10}
+.empty{text-align:center;color:var(--muted);padding:26px 0}
+.danger{margin-top:auto;background:transparent;color:var(--danger);padding:10px;border-radius:999px;border:1px solid #fb718555}
+.danger:hover{background:#fb718518}
+.prog{color:var(--muted);font-size:.85rem;text-align:right}
+@media(max-width:600px){#panel{border-radius:0}.node{width:100%;max-width:300px}.node.boss{width:100%;max-width:320px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 MINHA EQUIPE</h1>
+  <div class="actions">
+    <button class="btn" id="exp">Exportar backup</button>
+    <button class="btn" id="imp">Importar</button>
+    <button class="btn primary" id="addTop">+ Funcionário</button>
+    <input type="file" id="file" accept="application/json" hidden>
+  </div>
+</header>
+
+<div id="tree">
+  <svg id="lines"></svg>
+  <div class="root-wrap" id="rootWrap"></div>
+  <div class="row" id="row"></div>
+</div>
+
+<div id="overlay"></div>
+<aside id="panel" aria-live="polite"></aside>
+
+<script>
+const KEY = "minha-equipe-v1";
+const COLORS = ["#7c5cff","#22d3ee","#f472b6","#fb923c","#34d399","#facc15","#60a5fa","#f87171"];
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+let state = load();
+let openId = null;   // "boss" ou id do funcionário
+let tab = "demanda";
+
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.boss && s.people) return s; } catch(e){}
+  return { boss:{ name:"Eu", role:"Dono / Gestor", items:[] }, people:[] };
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const initial = n => (n.trim()[0] || "?").toUpperCase();
+
+function target(id){ return id === "boss" ? state.boss : state.people.find(p => p.id === id); }
+function stats(p){
+  const total = p.items.length, done = p.items.filter(i => i.done).length;
+  return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
+}
+
+function card(p, id, boss){
+  const s = stats(p);
+  const el = document.createElement("div");
+  el.className = "node" + (boss ? " boss" : "");
+  el.dataset.id = id;
+  if (!boss) el.style.setProperty("--c", p.color);
+  el.innerHTML = `
+    <div class="avatar">${boss ? "🧠" : esc(initial(p.name))}</div>
+    <h3>${esc(p.name)}</h3>
+    <div class="role">${esc(p.role || "")}</div>
+    <div class="bar"><i style="width:${s.pct}%"></i></div>
+    <div class="stats"><span>${s.done}/${s.total} feitos</span><span>${s.pct}%</span></div>`;
+  el.onclick = () => openPanel(id);
+  return el;
+}
+
+function render(){
+  const rw = $("#rootWrap"), row = $("#row");
+  rw.innerHTML = ""; row.innerHTML = "";
+  rw.appendChild(card(state.boss, "boss", true));
+  state.people.forEach(p => row.appendChild(card(p, p.id, false)));
+  const add = document.createElement("div");
+  add.className = "node add";
+  add.innerHTML = "<div><span>+</span><div>Novo funcionário</div></div>";
+  add.onclick = addPerson;
+  row.appendChild(add);
+  requestAnimationFrame(drawLines);
+}
+
+function drawLines(){
+  const svg = $("#lines"), tree = $("#tree");
+  const tr = tree.getBoundingClientRect();
+  svg.setAttribute("viewBox", `0 0 ${tr.width} ${tr.height}`);
+  const b = $(".node.boss").getBoundingClientRect();
+  const x1 = b.left + b.width/2 - tr.left, y1 = b.bottom - tr.top;
+  let out = "";
+  document.querySelectorAll("#row .node:not(.add)").forEach(n => {
+    const r = n.getBoundingClientRect();
+    const x2 = r.left + r.width/2 - tr.left, y2 = r.top - tr.top - 6;
+    const dy = (y2 - y1) / 2;
+    out += `<path d="M${x1},${y1} C${x1},${y1+dy} ${x2},${y2-dy} ${x2},${y2}"/>`;
+    out += `<polygon points="${x2-7},${y2-4} ${x2+7},${y2-4} ${x2},${y2+7}"/>`;
+  });
+  svg.innerHTML = out;
+}
+addEventListener("resize", drawLines);
+
+function addPerson(){
+  const p = { id:uid(), name:"Novo funcionário", role:"", color:COLORS[state.people.length % COLORS.length], items:[] };
+  state.people.push(p); save(); render(); openPanel(p.id, true);
+}
+
+/* ---------- painel ---------- */
+function openPanel(id, focusName){
+  openId = id; tab = "demanda";
+  renderPanel();
+  $("#panel").classList.add("open"); $("#overlay").classList.add("open");
+  if (focusName) setTimeout(() => { const i = $("#panel .name"); i.focus(); i.select(); }, 300);
+}
+function closePanel(){
+  openId = null;
+  $("#panel").classList.remove("open"); $("#overlay").classList.remove("open");
+}
+$("#overlay").onclick = closePanel;
+addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
+
+function renderPanel(){
+  const p = target(openId); if (!p) return closePanel();
+  const boss = openId === "boss";
+  const color = boss ? "linear-gradient(135deg,#7c5cff,#22d3ee)" : p.color;
+  const list = p.items.filter(i => i.type === tab);
+  const s = stats(p);
+  const today = new Date().toISOString().slice(0,10);
+  const label = tab === "demanda" ? "Demandas" : "Metas";
+  $("#panel").innerHTML = `
+    <div class="ph">
+      <div class="avatar" style="background:${color}">${boss ? "🧠" : esc(initial(p.name))}</div>
+      <div class="info">
+        <input class="name" value="${esc(p.name)}" aria-label="Nome">
+        <input class="rolei" value="${esc(p.role || "")}" placeholder="Cargo / função" aria-label="Cargo">
+      </div>
+      <button class="x" id="close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="prog">${s.done} de ${s.total} concluídos · ${s.pct}%</div>
+    <div class="tabs">
+      <button data-t="demanda" class="${tab==="demanda"?"on":""}">Demandas</button>
+      <button data-t="meta" class="${tab==="meta"?"on":""}">Metas</button>
+    </div>
+    <form class="addform" id="form">
+      <input type="text" id="txt" placeholder="${tab==="demanda" ? "Nova demanda…" : "Nova meta…"}" autocomplete="off">
+      <input type="date" id="due" title="Prazo (opcional)">
+      <button class="go" type="submit" aria-label="Adicionar">+</button>
+    </form>
+    <ul>${list.map(i => `
+      <li class="${i.done?"done":""}" data-id="${i.id}">
+        <button class="chk" aria-label="Concluir">${i.done?"✓":""}</button>
+        <div class="t">${esc(i.text)}${i.due ? `<small class="${!i.done && i.due < today ? "late" : ""}">Prazo: ${i.due.split("-").reverse().join("/")}${!i.done && i.due < today ? " · atrasado" : ""}</small>` : ""}</div>
+        <button class="del" aria-label="Remover">✕</button>
+      </li>`).join("") || `<div class="empty">Nenhuma ${label.toLowerCase().slice(0,-1)} ainda.<br>Adicione acima ☝️</div>`}
+    </ul>
+    ${boss ? "" : `<button class="danger" id="rm">Remover funcionário</button>`}`;
+
+  const panel = $("#panel");
+  $("#close").onclick = closePanel;
+  panel.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; renderPanel(); });
+  panel.querySelector(".name").oninput = e => { p.name = e.target.value || "Sem nome"; save(); refreshCard(); };
+  panel.querySelector(".rolei").oninput = e => { p.role = e.target.value; save(); refreshCard(); };
+  $("#form").onsubmit = e => {
+    e.preventDefault();
+    const text = $("#txt").value.trim(); if (!text) return;
+    p.items.push({ id:uid(), type:tab, text, due:$("#due").value || "", done:false });
+    save(); renderPanel(); render(); $("#txt").focus();
+  };
+  panel.querySelectorAll("li").forEach(li => {
+    const it = p.items.find(i => i.id === li.dataset.id);
+    li.querySelector(".chk").onclick = () => { it.done = !it.done; save(); renderPanel(); render(); };
+    li.querySelector(".del").onclick = () => { p.items = p.items.filter(i => i !== it); save(); renderPanel(); render(); };
+  });
+  const rm = $("#rm");
+  if (rm) rm.onclick = () => {
+    if (!confirm(`Remover ${p.name} e tudo que está no card?`)) return;
+    state.people = state.people.filter(x => x !== p); save(); closePanel(); render();
+  };
+}
+// atualiza só o card (sem recriar o painel, para não perder o foco ao digitar)
+function refreshCard(){
+  const old = document.querySelector(`.node[data-id="${openId}"]`); if (!old) return;
+  old.replaceWith(card(target(openId), openId, openId === "boss"));
+  drawLines();
+}
+
+/* ---------- backup ---------- */
+$("#addTop").onclick = addPerson;
+$("#exp").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type:"application/json" }));
+  a.download = "minha-equipe-backup.json"; a.click(); URL.revokeObjectURL(a.href);
+};
+$("#imp").onclick = () => $("#file").click();
+$("#file").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const s = JSON.parse(await f.text());
+    if (!s.boss || !Array.isArray(s.people)) throw 0;
+    if (!confirm("Isso substitui os dados atuais. Continuar?")) return;
+    state = s; save(); closePanel(); render();
+  } catch { alert("Arquivo inválido."); }
+  e.target.value = "";
+};
+
+render();
+</script>
+</body>
+</html>
