@@ -7,7 +7,7 @@
 <style>
 :root{
   --bg:#0f1220; --bg2:#171b30; --card:#1e2340; --line:#6c7bff; --text:#eef0ff; --muted:#9aa3d0;
-  --accent:#7c5cff; --accent2:#22d3ee; --ok:#34d399; --danger:#fb7185; --radius:26px;
+  --accent:#7c5cff; --accent2:#22d3ee; --ok:#34d399; --danger:#fb7185; --gold:#facc15; --radius:26px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
@@ -47,6 +47,7 @@ button{font:inherit;cursor:pointer;border:0;color:var(--text)}
 .bar{height:7px;background:#ffffff14;border-radius:99px;margin-top:14px;overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c,var(--accent)),var(--accent2));border-radius:99px;transition:width .4s}
 .stats{display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem;margin-top:8px}
+.badge{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:99px;background:#facc1522;color:var(--gold);font-size:.8rem;font-weight:600}
 .node.boss{
   width:290px;padding:26px;border:1px solid #8b7bff;
   background:linear-gradient(145deg,#2b2466,#1d2a5c);
@@ -62,10 +63,12 @@ button{font:inherit;cursor:pointer;border:0;color:var(--text)}
 #overlay{position:fixed;inset:0;background:#05061088;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:.25s;z-index:10}
 #overlay.open{opacity:1;pointer-events:auto}
 #panel{
-  position:fixed;top:0;right:0;height:100%;width:min(480px,100%);background:var(--bg2);z-index:11;
+  --c:var(--accent);
+  position:fixed;top:0;right:0;height:100%;width:min(520px,100%);background:var(--bg2);z-index:11;
   border-radius:32px 0 0 32px;padding:26px;overflow-y:auto;transform:translateX(105%);transition:.3s cubic-bezier(.2,.8,.2,1);
   box-shadow:-20px 0 60px #0008;display:flex;flex-direction:column;gap:16px;
 }
+#panel.wide{width:min(1020px,100%)}
 #panel.open{transform:none}
 .ph{display:flex;align-items:center;gap:14px}
 .ph .avatar{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:1.3rem;flex:none}
@@ -74,31 +77,112 @@ button{font:inherit;cursor:pointer;border:0;color:var(--text)}
 .ph input:hover,.ph input:focus{border-bottom-color:#3a4180;outline:0}
 .ph input.name{font-size:1.25rem;font-weight:700}
 .ph input.rolei{color:var(--muted);font-size:.9rem}
-.x{background:#ffffff10;width:38px;height:38px;border-radius:50%;font-size:1.1rem}
+.x{background:#ffffff10;width:38px;height:38px;border-radius:50%;font-size:1.1rem;flex:none}
 .x:hover{background:#ffffff22}
 .tabs{display:flex;background:var(--bg);border-radius:999px;padding:5px;gap:4px}
 .tabs button{flex:1;padding:9px;border-radius:999px;background:transparent;color:var(--muted);font-weight:600}
 .tabs button.on{background:var(--card);color:var(--text)}
-.addform{display:flex;gap:8px}
-.addform input[type=text]{flex:1;min-width:0;padding:12px 16px;border-radius:999px;border:1px solid #2c3260;background:var(--bg);color:var(--text);font:inherit}
-.addform input[type=date]{padding:10px 12px;border-radius:999px;border:1px solid #2c3260;background:var(--bg);color:var(--text);font:inherit;width:128px;flex:none;min-width:0;color-scheme:dark;font-size:.8rem}
-.addform input:focus{outline:0;border-color:var(--accent)}
-.addform .go{width:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:1.3rem;font-weight:700;flex:none}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nav .ttl{font-weight:700;font-size:1.05rem;text-align:center;flex:1}
+.nav button{background:var(--card);border-radius:999px;padding:8px 14px;border:1px solid #2c3260}
+.nav button:hover{border-color:var(--accent)}
+input[type=text],input[type=number],input[type=date],input[type=time]{
+  padding:11px 14px;border-radius:999px;border:1px solid #2c3260;background:var(--bg);color:var(--text);font:inherit;color-scheme:dark;min-width:0
+}
+input:focus{outline:0;border-color:var(--accent)}
+.addform{display:flex;gap:8px;flex-wrap:wrap}
+.addform input[type=text]{flex:1;min-width:140px}
+.addform input[type=number]{width:108px;flex:none}
+.addform input[type=date]{width:150px;flex:none;font-size:.85rem}
+.addform input[type=time]{width:112px;flex:none;font-size:.85rem}
+.addform .go{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:1.3rem;font-weight:700;flex:none}
 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 li{display:flex;align-items:center;gap:12px;background:var(--card);padding:13px 16px;border-radius:20px;border:1px solid #2a3060}
-li .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:transparent;flex:none;display:grid;place-items:center;font-size:.8rem;color:#06231a}
-li.done .chk{background:var(--ok);border-color:var(--ok)}
+li.stk{flex-direction:column;align-items:stretch;gap:10px}
+li .top{display:flex;align-items:center;gap:10px}
 li .t{flex:1;min-width:0;word-break:break-word}
 li.done .t{text-decoration:line-through;color:var(--muted)}
 li small{display:block;color:var(--muted);font-size:.75rem;margin-top:2px}
-li small.late{color:var(--danger)}
-li .del{background:transparent;color:var(--muted);font-size:1rem;width:28px;height:28px;border-radius:50%}
-li .del:hover{color:var(--danger);background:#ffffff10}
+.del{background:transparent;color:var(--muted);font-size:1rem;width:28px;height:28px;border-radius:50%;flex:none}
+.del:hover{color:var(--danger);background:#ffffff10}
+.cnt{color:var(--muted);font-size:.8rem;white-space:nowrap}
+.cfg{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:.8rem}
+.cfg input{width:66px;padding:6px 10px;font-size:.85rem}
 .empty{text-align:center;color:var(--muted);padding:26px 0}
 .danger{margin-top:auto;background:transparent;color:var(--danger);padding:10px;border-radius:999px;border:1px solid #fb718555}
 .danger:hover{background:#fb718518}
-.prog{color:var(--muted);font-size:.85rem;text-align:right}
-@media(max-width:600px){#panel{border-radius:0}.node{width:100%;max-width:300px}.node.boss{width:100%;max-width:320px}}
+
+/* bolinhas */
+.dotc{width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);background:transparent;flex:none;display:grid;place-items:center;font-size:.8rem;color:#06231a}
+.dotc:hover{border-color:var(--ok)}
+.dotc.on{background:var(--ok);border-color:var(--ok)}
+.dotc.on::after{content:"✓"}
+.dots{display:flex;flex-wrap:wrap;gap:6px}
+.dd{width:30px;height:30px;border-radius:50%;border:1.5px solid #3a4180;background:transparent;font-size:.72rem;color:var(--muted);padding:0}
+.dd.we{opacity:.45}
+.dd.td{border-color:var(--accent2);color:var(--text)}
+.dd:hover{border-color:var(--c)}
+.dd.on{background:var(--c);border-color:var(--c);color:#fff;font-weight:700;opacity:1}
+
+/* resultado / bonificacao */
+.score{background:linear-gradient(145deg,#2b2466,#1d2a5c);border-radius:24px;padding:18px 20px;border:1px solid #4a4399}
+.score .big{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.score .pct{font-size:2.2rem;font-weight:800;line-height:1}
+.score .money{font-size:1.5rem;font-weight:800;color:var(--gold)}
+.score small{color:var(--muted)}
+.mini{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg);border-radius:18px;padding:14px 16px;color:var(--muted);font-size:.9rem}
+.mini b{color:var(--text)}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:12px;border-radius:999px;background:var(--bg);border:1px solid #2c3260;font-weight:600;color:var(--muted)}
+.seg button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:0}
+.fld{display:flex;flex-direction:column;gap:6px;flex:1;font-size:.82rem;color:var(--muted)}
+.fld input{width:100%}
+.frow{display:flex;gap:12px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{color:var(--muted);font-weight:500;text-align:left;padding:6px 8px}
+td{padding:9px 8px;border-top:1px solid #2a3060}
+td.r,th.r{text-align:right}
+.warn{background:#facc1514;color:var(--gold);border-radius:14px;padding:10px 14px;font-size:.82rem}
+
+/* calendario */
+.views{display:flex;background:var(--bg);border-radius:999px;padding:5px;gap:4px}
+.views button{flex:1;padding:9px;border-radius:999px;background:transparent;color:var(--muted);font-weight:600}
+.views button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.col{background:var(--card);border-radius:18px;padding:10px;border:1px solid #2a3060;min-height:150px;display:flex;flex-direction:column;gap:6px}
+.col.sel{border-color:var(--accent2)}
+.col.today .hd{color:var(--accent2)}
+.col .hd{width:100%;background:transparent;text-align:center;font-weight:700;padding:2px 0 6px;border-bottom:1px solid #2a3060;font-size:.85rem}
+.col .hd small{display:block;color:var(--muted);font-weight:400;font-size:.7rem}
+.ct{display:flex;gap:7px;align-items:flex-start;font-size:.8rem;word-break:break-word}
+.ct .dotc{width:18px;height:18px;font-size:.6rem;margin-top:1px}
+.ct.done span{text-decoration:line-through;color:var(--muted)}
+.ct small{color:var(--muted);display:block}
+.mg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.mg .dh{text-align:center;color:var(--muted);font-size:.75rem;padding:4px}
+.cell{background:var(--card);border:1px solid #2a3060;border-radius:14px;min-height:62px;padding:6px;text-align:left;display:flex;flex-direction:column;gap:4px;color:var(--text)}
+.cell:hover{border-color:var(--accent)}
+.cell.out{opacity:.35}
+.cell.sel{border-color:var(--accent2);box-shadow:0 0 0 2px #22d3ee33}
+.cell.today b{color:var(--accent2)}
+.cell b{font-size:.8rem}
+.cell .dd2{display:flex;gap:3px;flex-wrap:wrap}
+.cell .dd2 i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted)}
+.cell .dd2 i.on{background:var(--ok);border-color:var(--ok)}
+.yg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ym{background:var(--card);border-radius:20px;padding:16px;border:1px solid #2a3060;text-align:left;color:var(--text)}
+.ym:hover{border-color:var(--accent)}
+.ym.now{border-color:var(--accent2)}
+.ym h4{margin:0 0 4px}
+.ym small{color:var(--muted)}
+.sub{font-weight:700;color:var(--muted);font-size:.85rem;margin-top:4px}
+
+@media(max-width:700px){
+  #panel{border-radius:0;padding:20px}
+  .node{width:100%;max-width:300px}.node.boss{width:100%;max-width:320px}
+  .wk{grid-template-columns:1fr}.col{min-height:0}
+  .col .hd{text-align:left}
+}
 </style>
 </head>
 <body>
@@ -124,40 +208,101 @@ li .del:hover{color:var(--danger);background:#ffffff10}
 <script>
 const KEY = "minha-equipe-v1";
 const COLORS = ["#7c5cff","#22d3ee","#f472b6","#fb923c","#34d399","#facc15","#60a5fa","#f87171"];
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DSEM = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const uid = () => Math.random().toString(36).slice(2, 9);
+const pad = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const monthKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate()+n); return iso(d); };
+const brl = v => v.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const mkLabel = mk => { const [y,m] = mk.split("-").map(Number); return `${MESES[m-1]} ${y}`; };
+const shiftMonth = (mk, n) => { const [y,m] = mk.split("-").map(Number); return monthKey(new Date(y, m-1+n, 1)); };
+const daysIn = mk => { const [y,m] = mk.split("-").map(Number); return new Date(y, m, 0).getDate(); };
+const weekdaysIn = mk => { const [y,m] = mk.split("-").map(Number); let c = 0;
+  for (let d = 1; d <= daysIn(mk); d++) { const w = new Date(y, m-1, d).getDay(); if (w && w < 6) c++; } return c; };
+const mondayOf = s => { const d = parse(s); d.setDate(d.getDate() - ((d.getDay()+6) % 7)); return iso(d); };
+const todayIso = () => iso(new Date());
 
-let state = load();
-let openId = null;   // "boss" ou id do funcionário
-let tab = "demanda";
-
+/* ---------- dados ---------- */
+function normalize(s){
+  const mk = monthKey(new Date());
+  s.boss = s.boss || { name:"Eu", role:"Dono / Gestor" };
+  if (!Array.isArray(s.boss.tasks)) {
+    s.boss.tasks = (s.boss.items || []).map(i => ({ id:i.id || uid(), text:i.text, date:i.due || todayIso(), time:"", done:!!i.done }));
+  }
+  delete s.boss.items;
+  s.people.forEach(p => {
+    p.bonus = Object.assign({ on:false, amount:0, min:0 }, p.bonus);
+    p.items = (p.items || []).map(i => {
+      const o = { id:i.id || uid(), type:i.type === "meta" ? "meta" : "demanda", text:i.text,
+        weight:+i.weight || 0, target:+i.target || 0, days:i.days || {}, months:i.months || {} };
+      if (i.done && o.type === "meta") o.months[mk] = true;
+      return o;
+    });
+  });
+  return s;
+}
 function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.boss && s.people) return s; } catch(e){}
-  return { boss:{ name:"Eu", role:"Dono / Gestor", items:[] }, people:[] };
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.boss && Array.isArray(s.people)) return normalize(s); } catch(e){}
+  return normalize({ boss:{ name:"Eu", role:"Dono / Gestor" }, people:[] });
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+let state = load();
+let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso() };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const initial = n => (n.trim()[0] || "?").toUpperCase();
+const target = id => id === "boss" ? state.boss : state.people.find(p => p.id === id);
 
-function target(id){ return id === "boss" ? state.boss : state.people.find(p => p.id === id); }
-function stats(p){
-  const total = p.items.length, done = p.items.filter(i => i.done).length;
-  return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
+/* ---------- bonificação ---------- */
+function calc(p, mk){
+  const items = p.items;
+  const sum = items.reduce((a, i) => a + i.weight, 0);
+  const rows = items.map(i => {
+    const w = sum > 0 ? i.weight / sum : 1 / items.length;
+    let frac, label;
+    if (i.type === "demanda") {
+      const done = Object.keys(i.days).filter(k => k.startsWith(mk) && i.days[k]).length;
+      const tgt = i.target || weekdaysIn(mk);
+      frac = Math.min(1, done / tgt); label = `${done}/${tgt} dias`;
+    } else {
+      frac = i.months[mk] ? 1 : 0; label = frac ? "Cumprida" : "Pendente";
+    }
+    return { item:i, w, frac, label, pts:w * frac * 100 };
+  });
+  const pct = rows.reduce((a, r) => a + r.pts, 0);
+  const reached = pct >= p.bonus.min;
+  const money = p.bonus.on && reached ? p.bonus.amount * pct / 100 : 0;
+  return { rows, pct, sum, money, reached };
 }
 
+/* ---------- árvore ---------- */
 function card(p, id, boss){
-  const s = stats(p);
   const el = document.createElement("div");
   el.className = "node" + (boss ? " boss" : "");
   el.dataset.id = id;
-  if (!boss) el.style.setProperty("--c", p.color);
+  let bar, l, r, extra = "";
+  if (boss) {
+    const t = p.tasks.filter(x => x.date === todayIso());
+    const d = t.filter(x => x.done).length;
+    bar = t.length ? Math.round(d / t.length * 100) : 0; l = `Hoje: ${d}/${t.length} feitas`; r = bar + "%";
+  } else {
+    el.style.setProperty("--c", p.color);
+    const c = calc(p, monthKey(new Date()));
+    bar = Math.round(c.pct); l = "Nota do mês"; r = bar + "%";
+    if (p.bonus.on) extra = `<div class="badge">💰 ${brl(c.money)}</div>`;
+  }
   el.innerHTML = `
     <div class="avatar">${boss ? "🧠" : esc(initial(p.name))}</div>
     <h3>${esc(p.name)}</h3>
     <div class="role">${esc(p.role || "")}</div>
-    <div class="bar"><i style="width:${s.pct}%"></i></div>
-    <div class="stats"><span>${s.done}/${s.total} feitos</span><span>${s.pct}%</span></div>`;
+    <div class="bar"><i style="width:${bar}%"></i></div>
+    <div class="stats"><span>${l}</span><span>${r}</span></div>${extra}`;
   el.onclick = () => openPanel(id);
   return el;
 }
@@ -194,88 +339,256 @@ function drawLines(){
 addEventListener("resize", drawLines);
 
 function addPerson(){
-  const p = { id:uid(), name:"Novo funcionário", role:"", color:COLORS[state.people.length % COLORS.length], items:[] };
+  const p = { id:uid(), name:"Novo funcionário", role:"", color:COLORS[state.people.length % COLORS.length],
+    bonus:{ on:false, amount:0, min:0 }, items:[] };
   state.people.push(p); save(); render(); openPanel(p.id, true);
 }
 
 /* ---------- painel ---------- */
+const panel = $("#panel");
 function openPanel(id, focusName){
-  openId = id; tab = "demanda";
+  ui.id = id; ui.tab = "demanda"; ui.mk = monthKey(new Date()); ui.cur = todayIso();
   renderPanel();
-  $("#panel").classList.add("open"); $("#overlay").classList.add("open");
-  if (focusName) setTimeout(() => { const i = $("#panel .name"); i.focus(); i.select(); }, 300);
+  panel.scrollTop = 0;
+  panel.classList.add("open"); $("#overlay").classList.add("open");
+  if (focusName) setTimeout(() => { const i = panel.querySelector(".name"); i.focus(); i.select(); }, 300);
 }
 function closePanel(){
-  openId = null;
-  $("#panel").classList.remove("open"); $("#overlay").classList.remove("open");
+  ui.id = null;
+  panel.classList.remove("open"); $("#overlay").classList.remove("open");
 }
 $("#overlay").onclick = closePanel;
 addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
 
-function renderPanel(){
-  const p = target(openId); if (!p) return closePanel();
-  const boss = openId === "boss";
-  const color = boss ? "linear-gradient(135deg,#7c5cff,#22d3ee)" : p.color;
-  const list = p.items.filter(i => i.type === tab);
-  const s = stats(p);
-  const today = new Date().toISOString().slice(0,10);
-  const label = tab === "demanda" ? "Demandas" : "Metas";
-  $("#panel").innerHTML = `
-    <div class="ph">
-      <div class="avatar" style="background:${color}">${boss ? "🧠" : esc(initial(p.name))}</div>
-      <div class="info">
-        <input class="name" value="${esc(p.name)}" aria-label="Nome">
-        <input class="rolei" value="${esc(p.role || "")}" placeholder="Cargo / função" aria-label="Cargo">
-      </div>
-      <button class="x" id="close" aria-label="Fechar">✕</button>
+function header(p, boss){
+  const bg = boss ? "linear-gradient(135deg,#7c5cff,#22d3ee)" : p.color;
+  return `<div class="ph">
+    <div class="avatar" style="background:${bg}">${boss ? "🧠" : esc(initial(p.name))}</div>
+    <div class="info">
+      <input class="name" data-f="name" value="${esc(p.name)}" aria-label="Nome">
+      <input class="rolei" data-f="role" value="${esc(p.role || "")}" placeholder="Cargo / função" aria-label="Cargo">
     </div>
-    <div class="prog">${s.done} de ${s.total} concluídos · ${s.pct}%</div>
-    <div class="tabs">
-      <button data-t="demanda" class="${tab==="demanda"?"on":""}">Demandas</button>
-      <button data-t="meta" class="${tab==="meta"?"on":""}">Metas</button>
-    </div>
-    <form class="addform" id="form">
-      <input type="text" id="txt" placeholder="${tab==="demanda" ? "Nova demanda…" : "Nova meta…"}" autocomplete="off">
-      <input type="date" id="due" title="Prazo (opcional)">
-      <button class="go" type="submit" aria-label="Adicionar">+</button>
-    </form>
-    <ul>${list.map(i => `
-      <li class="${i.done?"done":""}" data-id="${i.id}">
-        <button class="chk" aria-label="Concluir">${i.done?"✓":""}</button>
-        <div class="t">${esc(i.text)}${i.due ? `<small class="${!i.done && i.due < today ? "late" : ""}">Prazo: ${i.due.split("-").reverse().join("/")}${!i.done && i.due < today ? " · atrasado" : ""}</small>` : ""}</div>
-        <button class="del" aria-label="Remover">✕</button>
-      </li>`).join("") || `<div class="empty">Nenhuma ${label.toLowerCase().slice(0,-1)} ainda.<br>Adicione acima ☝️</div>`}
-    </ul>
-    ${boss ? "" : `<button class="danger" id="rm">Remover funcionário</button>`}`;
+    <button class="x" data-act="close" aria-label="Fechar">✕</button>
+  </div>`;
+}
 
-  const panel = $("#panel");
-  $("#close").onclick = closePanel;
-  panel.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; renderPanel(); });
-  panel.querySelector(".name").oninput = e => { p.name = e.target.value || "Sem nome"; save(); refreshCard(); };
-  panel.querySelector(".rolei").oninput = e => { p.role = e.target.value; save(); refreshCard(); };
-  $("#form").onsubmit = e => {
-    e.preventDefault();
-    const text = $("#txt").value.trim(); if (!text) return;
-    p.items.push({ id:uid(), type:tab, text, due:$("#due").value || "", done:false });
-    save(); renderPanel(); render(); $("#txt").focus();
-  };
-  panel.querySelectorAll("li").forEach(li => {
-    const it = p.items.find(i => i.id === li.dataset.id);
-    li.querySelector(".chk").onclick = () => { it.done = !it.done; save(); renderPanel(); render(); };
-    li.querySelector(".del").onclick = () => { p.items = p.items.filter(i => i !== it); save(); renderPanel(); render(); };
-  });
-  const rm = $("#rm");
-  if (rm) rm.onclick = () => {
+function renderPanel(){
+  const p = target(ui.id); if (!p) return closePanel();
+  const sc = panel.scrollTop;
+  const boss = ui.id === "boss";
+  panel.classList.toggle("wide", boss);
+  panel.style.setProperty("--c", boss ? "var(--accent)" : p.color);
+  panel.innerHTML = header(p, boss) + (boss ? bossHtml(p) : empHtml(p));
+  panel.scrollTop = sc;
+}
+
+/* --- funcionário --- */
+function empHtml(p){
+  const c = calc(p, ui.mk);
+  const nav = `<div class="nav">
+    <button data-act="mnav" data-d="-1" aria-label="Mês anterior">‹</button>
+    <div class="ttl">${mkLabel(ui.mk)}</div>
+    <button data-act="mnav" data-d="1" aria-label="Próximo mês">›</button></div>`;
+  const tabs = `<div class="tabs">
+    ${[["demanda","Demandas"],["meta","Metas"],["bonus","Bonificação"]].map(([k,l]) =>
+      `<button data-act="tab" data-t="${k}" class="${ui.tab===k?"on":""}">${l}${k==="bonus"&&p.bonus.on?" 💰":""}</button>`).join("")}
+  </div>`;
+  const summary = `<div class="mini"><span>Nota do mês</span><b>${c.pct.toFixed(0)}%${p.bonus.on ? " · " + brl(c.money) : ""}</b></div>`;
+  let body = "";
+  if (ui.tab === "bonus") body = bonusHtml(p, c);
+  else body = listHtml(p, c);
+  const rm = `<button class="danger" data-act="rm">Remover funcionário</button>`;
+  return nav + tabs + (ui.tab === "bonus" ? "" : summary) + body + rm;
+}
+
+function listHtml(p, c){
+  const type = ui.tab;
+  const rows = c.rows.filter(r => r.item.type === type);
+  const today = todayIso();
+  const form = `<form class="addform" data-form="item">
+    <input type="text" name="text" placeholder="${type==="demanda" ? "Nova demanda (todo dia)…" : "Nova meta do mês…"}" autocomplete="off">
+    <input type="number" name="weight" placeholder="Peso %" min="0" max="100" step="1">
+    <button class="go" type="submit" aria-label="Adicionar">+</button></form>`;
+  const li = rows.map(r => {
+    const i = r.item;
+    const cfg = `<div class="cfg">Peso <input type="number" data-f="weight" data-id="${i.id}" value="${i.weight}" min="0" max="100"> %
+      ${type === "demanda" ? `· Meta <input type="number" data-f="target" data-id="${i.id}" value="${i.target || weekdaysIn(ui.mk)}" min="1" max="31"> dias no mês` : ""}</div>`;
+    if (type === "meta") {
+      const on = !!i.months[ui.mk];
+      return `<li class="stk ${on ? "done" : ""}"><div class="top">
+        <button class="dotc ${on ? "on" : ""}" data-act="mtoggle" data-id="${i.id}" aria-label="Marcar meta"></button>
+        <div class="t">${esc(i.text)}<small>${on ? "Cumprida em " : "Pendente em "}${mkLabel(ui.mk)}</small></div>
+        <button class="del" data-act="delitem" data-id="${i.id}" aria-label="Remover">✕</button></div>${cfg}</li>`;
+    }
+    let dots = "";
+    for (let d = 1; d <= daysIn(ui.mk); d++) {
+      const key = `${ui.mk}-${pad(d)}`, w = parse(key).getDay();
+      dots += `<button class="dd ${i.days[key] ? "on" : ""} ${w===0||w===6 ? "we" : ""} ${key===today ? "td" : ""}"
+        data-act="day" data-id="${i.id}" data-day="${key}" title="${DSEM[w]} ${d}">${d}</button>`;
+    }
+    return `<li class="stk"><div class="top"><div class="t">${esc(i.text)}</div>
+      <span class="cnt">${r.label}</span>
+      <button class="del" data-act="delitem" data-id="${i.id}" aria-label="Remover">✕</button></div>
+      <div class="dots">${dots}</div>${cfg}</li>`;
+  }).join("") || `<div class="empty">Nenhuma ${type === "demanda" ? "demanda" : "meta"} ainda.<br>Adicione acima ☝️</div>`;
+  return form + `<ul>${li}</ul>`;
+}
+
+function bonusHtml(p, c){
+  const b = p.bonus;
+  let h = `<div class="sub">Esse funcionário tem bonificação?</div>
+    <div class="seg"><button data-act="bonuson" data-v="1" class="${b.on?"on":""}">Sim</button>
+    <button data-act="bonuson" data-v="0" class="${!b.on?"on":""}">Não</button></div>`;
+  if (!b.on) return h + `<div class="empty">Sem bonificação para este funcionário.</div>`;
+  h += `<div class="frow">
+    <label class="fld">Bonificação máxima (R$)<input type="number" data-f="amount" value="${b.amount}" min="0" step="10"></label>
+    <label class="fld">Nota mínima para receber (%)<input type="number" data-f="min" value="${b.min}" min="0" max="100"></label></div>`;
+  h += `<div class="nav">
+    <button data-act="mnav" data-d="-1">‹</button><div class="ttl">${mkLabel(ui.mk)}</div>
+    <button data-act="mnav" data-d="1">›</button></div>`;
+  h += `<div class="score"><div class="big">
+      <div><small>Nota do mês</small><div class="pct">${c.pct.toFixed(0)}%</div></div>
+      <div style="text-align:right"><small>${c.reached ? "Bonificação do mês" : `Abaixo do mínimo (${b.min}%)`}</small><div class="money">${brl(c.money)}</div></div>
+    </div><div class="bar"><i style="width:${Math.min(100,c.pct)}%"></i></div></div>`;
+  if (!c.rows.length) return h + `<div class="empty">Cadastre demandas e metas para calcular.</div>`;
+  if (c.sum > 0 && Math.round(c.sum) !== 100) h += `<div class="warn">Os pesos somam ${c.sum}%. Eles serão ajustados proporcionalmente para fechar 100%.</div>`;
+  if (c.sum === 0) h += `<div class="warn">Nenhum peso definido: todos os itens valem o mesmo.</div>`;
+  h += `<table><tr><th>Item</th><th class="r">Peso</th><th class="r">Feito</th><th class="r">Pontos</th></tr>` +
+    c.rows.map(r => `<tr><td>${r.item.type === "meta" ? "🎯" : "🔁"} ${esc(r.item.text)}</td>
+      <td class="r">${(r.w*100).toFixed(0)}%</td><td class="r">${r.label}</td><td class="r">${r.pts.toFixed(1)}</td></tr>`).join("") + `</table>`;
+  return h;
+}
+
+/* --- você (cérebro): calendário --- */
+const tasksOn = d => state.boss.tasks.filter(t => t.date === d).sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));
+const fmtLong = s => cap(parse(s).toLocaleDateString("pt-BR", { weekday:"long", day:"numeric", month:"long", year:"numeric" }));
+
+function taskLi(t){
+  return `<li class="${t.done ? "done" : ""}">
+    <button class="dotc ${t.done ? "on" : ""}" data-act="ttoggle" data-id="${t.id}" aria-label="Marcar"></button>
+    <div class="t">${esc(t.text)}${t.time ? `<small>${t.time}</small>` : ""}</div>
+    <button class="del" data-act="tdel" data-id="${t.id}" aria-label="Remover">✕</button></li>`;
+}
+function dayList(d){
+  const t = tasksOn(d), n = t.filter(x => x.done).length;
+  return `<div class="sub">${fmtLong(d)} · ${n}/${t.length} feitas</div>
+    <ul>${t.map(taskLi).join("") || `<div class="empty">Nada marcado para este dia.</div>`}</ul>`;
+}
+
+function bossHtml(p){
+  const v = ui.view, cur = ui.cur, c = parse(cur);
+  const views = `<div class="views">${[["dia","Diário"],["semana","Semanal"],["mes","Mensal"],["ano","Anual"]].map(([k,l]) =>
+    `<button data-act="view" data-v="${k}" class="${v===k?"on":""}">${l}</button>`).join("")}</div>`;
+  let title, step;
+  if (v === "dia") { title = fmtLong(cur); }
+  else if (v === "semana") { const a = mondayOf(cur), b = addDays(a, 6), A = parse(a), B = parse(b);
+    title = `${A.getDate()} ${MESES[A.getMonth()].slice(0,3)} – ${B.getDate()} ${MESES[B.getMonth()].slice(0,3)} ${B.getFullYear()}`; }
+  else if (v === "mes") title = mkLabel(monthKey(c));
+  else title = String(c.getFullYear());
+  const nav = `<div class="nav"><button data-act="cnav" data-d="-1" aria-label="Anterior">‹</button>
+    <div class="ttl">${title}</div>
+    <button data-act="today">Hoje</button>
+    <button data-act="cnav" data-d="1" aria-label="Próximo">›</button></div>`;
+  const form = `<form class="addform" data-form="task">
+    <input type="text" name="text" placeholder="Nova demanda / compromisso…" autocomplete="off">
+    <input type="date" name="date" value="${cur}">
+    <input type="time" name="time">
+    <button class="go" type="submit" aria-label="Adicionar">+</button></form>`;
+  let body = "";
+  if (v === "dia") body = dayList(cur);
+  else if (v === "semana") {
+    const a = mondayOf(cur);
+    body = `<div class="wk">` + [0,1,2,3,4,5,6].map(n => {
+      const d = addDays(a, n), t = tasksOn(d), D = parse(d);
+      return `<div class="col ${d===cur?"sel":""} ${d===todayIso()?"today":""}">
+        <button class="hd" data-act="pick" data-date="${d}">${DSEM[D.getDay()]}<small>${D.getDate()}/${pad(D.getMonth()+1)}</small></button>
+        ${t.map(x => `<div class="ct ${x.done?"done":""}"><button class="dotc ${x.done?"on":""}" data-act="ttoggle" data-id="${x.id}" aria-label="Marcar"></button>
+          <span>${esc(x.text)}${x.time ? `<small>${x.time}</small>` : ""}</span></div>`).join("")}</div>`;
+    }).join("") + `</div>` + dayList(cur);
+  } else if (v === "mes") {
+    const mk = monthKey(c), first = `${mk}-01`, start = mondayOf(first);
+    const total = Math.ceil((((parse(first).getDay()+6) % 7) + daysIn(mk)) / 7) * 7;
+    let cells = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map(x => `<div class="dh">${x}</div>`).join("");
+    for (let n = 0; n < total; n++) {
+      const d = addDays(start, n), t = tasksOn(d);
+      cells += `<button class="cell ${d.startsWith(mk)?"":"out"} ${d===cur?"sel":""} ${d===todayIso()?"today":""}" data-act="pick" data-date="${d}">
+        <b>${parse(d).getDate()}</b><div class="dd2">${t.slice(0,6).map(x => `<i class="${x.done?"on":""}"></i>`).join("")}</div></button>`;
+    }
+    body = `<div class="mg">${cells}</div>` + dayList(cur);
+  } else {
+    const y = c.getFullYear();
+    body = `<div class="yg">` + MESES.map((m, i) => {
+      const mk = `${y}-${pad(i+1)}`, t = state.boss.tasks.filter(x => x.date.startsWith(mk)), d = t.filter(x => x.done).length;
+      return `<button class="ym ${mk===monthKey(new Date())?"now":""}" data-act="gomonth" data-date="${mk}-01">
+        <h4>${m}</h4><small>${d}/${t.length} feitas</small>
+        <div class="bar"><i style="width:${t.length ? d/t.length*100 : 0}%"></i></div></button>`;
+    }).join("") + `</div>`;
+  }
+  return views + nav + form + body;
+}
+
+/* ---------- eventos do painel ---------- */
+function refresh(){ save(); renderPanel(); render(); }
+panel.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const p = target(ui.id), D = b.dataset, a = D.act;
+  const item = () => p.items.find(i => i.id === D.id);
+  const task = () => p.tasks.find(t => t.id === D.id);
+  if (a === "close") return closePanel();
+  if (a === "tab") { ui.tab = D.t; return renderPanel(); }
+  if (a === "mnav") { ui.mk = shiftMonth(ui.mk, +D.d); return renderPanel(); }
+  if (a === "day") { const i = item(); i.days[D.day] = !i.days[D.day]; if (!i.days[D.day]) delete i.days[D.day]; return refresh(); }
+  if (a === "mtoggle") { const i = item(); i.months[ui.mk] = !i.months[ui.mk]; return refresh(); }
+  if (a === "delitem") { p.items = p.items.filter(i => i.id !== D.id); return refresh(); }
+  if (a === "bonuson") { p.bonus.on = D.v === "1"; return refresh(); }
+  if (a === "rm") {
     if (!confirm(`Remover ${p.name} e tudo que está no card?`)) return;
-    state.people = state.people.filter(x => x !== p); save(); closePanel(); render();
-  };
-}
-// atualiza só o card (sem recriar o painel, para não perder o foco ao digitar)
-function refreshCard(){
-  const old = document.querySelector(`.node[data-id="${openId}"]`); if (!old) return;
-  old.replaceWith(card(target(openId), openId, openId === "boss"));
-  drawLines();
-}
+    state.people = state.people.filter(x => x !== p); save(); closePanel(); return render();
+  }
+  // calendário
+  if (a === "view") { ui.view = D.v; return renderPanel(); }
+  if (a === "today") { ui.cur = todayIso(); return renderPanel(); }
+  if (a === "cnav") {
+    const n = +D.d, c = parse(ui.cur);
+    if (ui.view === "dia") ui.cur = addDays(ui.cur, n);
+    else if (ui.view === "semana") ui.cur = addDays(ui.cur, 7 * n);
+    else if (ui.view === "mes") ui.cur = iso(new Date(c.getFullYear(), c.getMonth() + n, 1));
+    else ui.cur = iso(new Date(c.getFullYear() + n, c.getMonth(), 1));
+    return renderPanel();
+  }
+  if (a === "pick") { ui.cur = D.date; return renderPanel(); }
+  if (a === "gomonth") { ui.cur = D.date; ui.view = "mes"; return renderPanel(); }
+  if (a === "ttoggle") { const t = task(); t.done = !t.done; return refresh(); }
+  if (a === "tdel") { p.tasks = p.tasks.filter(t => t.id !== D.id); return refresh(); }
+});
+panel.addEventListener("input", e => {
+  const f = e.target.dataset.f, p = target(ui.id);
+  if (f !== "name" && f !== "role") return;
+  if (f === "name") p.name = e.target.value || "Sem nome"; else p.role = e.target.value;
+  save();
+  const old = document.querySelector(`.node[data-id="${ui.id}"]`);
+  old.replaceWith(card(p, ui.id, ui.id === "boss")); drawLines();
+});
+panel.addEventListener("change", e => {
+  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role") return;
+  const v = Math.max(0, +e.target.value || 0);
+  if (f === "amount" || f === "min") p.bonus[f] = v;
+  else { const i = p.items.find(x => x.id === e.target.dataset.id); i[f] = v; }
+  refresh();
+});
+panel.addEventListener("submit", e => {
+  e.preventDefault();
+  const p = target(ui.id), fd = new FormData(e.target), text = (fd.get("text") || "").trim();
+  if (!text) return;
+  if (e.target.dataset.form === "task") {
+    p.tasks.push({ id:uid(), text, date:fd.get("date") || ui.cur, time:fd.get("time") || "", done:false });
+    if (fd.get("date")) ui.cur = fd.get("date");
+  } else {
+    p.items.push({ id:uid(), type:ui.tab, text, weight:Math.max(0, +fd.get("weight") || 0), target:0, days:{}, months:{} });
+  }
+  refresh();
+  const t = panel.querySelector('input[name="text"]'); if (t) t.focus();
+});
 
 /* ---------- backup ---------- */
 $("#addTop").onclick = addPerson;
@@ -291,7 +604,7 @@ $("#file").onchange = async e => {
     const s = JSON.parse(await f.text());
     if (!s.boss || !Array.isArray(s.people)) throw 0;
     if (!confirm("Isso substitui os dados atuais. Continuar?")) return;
-    state = s; save(); closePanel(); render();
+    state = normalize(s); save(); closePanel(); render();
   } catch { alert("Arquivo inválido."); }
   e.target.value = "";
 };
