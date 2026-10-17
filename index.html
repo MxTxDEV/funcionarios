@@ -177,8 +177,56 @@ td.r,th.r{text-align:right}
 .ym small{color:var(--muted)}
 .sub{font-weight:700;color:var(--muted);font-size:.85rem;margin-top:4px}
 
+.hub{display:flex;align-items:center;justify-content:center;gap:110px}
+.node.side{width:250px}
+.node.side .avatar{font-size:1.9rem;background:linear-gradient(135deg,#0ea5e9,#6366f1)}
+.node.side[data-id=maint] .avatar{background:linear-gradient(135deg,#f59e0b,#ef4444)}
+.node.side[data-id=stock] .avatar{background:linear-gradient(135deg,#10b981,#0ea5e9)}
+.badge.bad{background:#fb718522;color:var(--danger)}
+.badge.good{background:#34d39922;color:var(--ok)}
+select,textarea{padding:11px 14px;border-radius:16px;border:1px solid #2c3260;background:var(--bg);color:var(--text);font:inherit;color-scheme:dark;min-width:0}
+select{border-radius:999px}
+textarea{resize:vertical;width:100%;font-size:.88rem}
+select:focus,textarea:focus{outline:0;border-color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kpi{background:var(--card);border:1px solid #2a3060;border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi small{color:var(--muted);font-size:.75rem}
+.kpi b{font-size:1.15rem}
+.kpi.warn b{color:var(--gold)}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.pill.ok{background:#34d39922;color:var(--ok)}
+.pill.warn{background:#facc1522;color:var(--gold)}
+.pill.bad{background:#fb718522;color:var(--danger)}
+.pill.info{background:#60a5fa22;color:#60a5fa}
+.tw{overflow-x:auto;background:var(--card);border:1px solid #2a3060;border-radius:20px;padding:6px 10px}
+.tw table{min-width:760px}
+.tw td small{display:block;color:var(--muted);font-size:.72rem}
+.tw td.act{white-space:nowrap;text-align:right}
+.ib{background:#ffffff0d;width:30px;height:30px;border-radius:10px;font-size:.85rem;margin-left:3px}
+.ib:hover{background:#ffffff22}
+.pf{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;background:var(--card);border:1px solid #2a3060;border-radius:22px;padding:16px}
+.pf .fld.wide{grid-column:span 2}
+.pf .fld input,.pf .fld select{width:100%}
+.pf .bt{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end}
+.movf{background:var(--card);border:1px solid var(--accent);border-radius:22px;padding:14px;align-items:center}
+.movf b{flex:1 1 100%}
+.pri{width:12px;height:12px;border-radius:50%;flex:none;background:var(--muted)}
+.pri.alta{background:var(--danger)}.pri.media{background:var(--gold)}.pri.baixa{background:var(--ok)}
+.eq{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed transparent;color:var(--text);font:inherit;font-weight:700;font-size:1.02rem;padding:2px 0}
+.eq:hover,.eq:focus{border-bottom-color:#3a4180;outline:0}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.mgrid .fld textarea{width:100%}
+li.mi.fin{opacity:.8}
+.cfg select{padding:6px 10px;font-size:.82rem}
+.cfg input[type=text]{width:140px}
+@media(max-width:1000px){
+  .hub{flex-direction:column;gap:20px}
+  .node.boss{order:3}
+  .node.side{width:100%;max-width:320px}
+}
 @media(max-width:700px){
   #panel{border-radius:0;padding:20px}
+  .pf .fld.wide{grid-column:auto}
   .node{width:100%;max-width:300px}.node.boss{width:100%;max-width:320px}
   .wk{grid-template-columns:1fr}.col{min-height:0}
   .col .hd{text-align:left}
@@ -234,6 +282,13 @@ function normalize(s){
     s.boss.tasks = (s.boss.items || []).map(i => ({ id:i.id || uid(), text:i.text, date:i.due || todayIso(), time:"", done:!!i.done }));
   }
   delete s.boss.items;
+  s.stock = Object.assign({ name:"Estoque", role:"Produtos da loja", items:[], moves:[] }, s.stock);
+  s.stock.items = s.stock.items.map(i => ({ id:i.id || uid(), name:i.name || "Produto", sku:i.sku || "", category:i.category || "",
+    unit:i.unit || "un", qty:+i.qty || 0, min:+i.min || 0, cost:+i.cost || 0, price:+i.price || 0, location:i.location || "", supplier:i.supplier || "" }));
+  s.stock.moves = s.stock.moves || [];
+  s.maint = Object.assign({ name:"Manutenções", role:"Equipamentos e reparos", items:[] }, s.maint);
+  s.maint.items = s.maint.items.map(i => ({ id:i.id || uid(), equip:i.equip || "Equipamento", loc:i.loc || "", problem:i.problem || "", todo:i.todo || "",
+    done:i.done || "", pri:i.pri || "media", resp:i.resp || "Eu", status:i.status || "aberta", opened:i.opened || todayIso(), closed:i.closed || "" }));
   s.people.forEach(p => {
     p.bonus = Object.assign({ on:false, amount:0, min:0 }, p.bonus);
     p.items = (p.items || []).map(i => {
@@ -252,12 +307,12 @@ function load(){
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 
 let state = load();
-let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso() };
+let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas" };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const initial = n => (n.trim()[0] || "?").toUpperCase();
-const target = id => id === "boss" ? state.boss : state.people.find(p => p.id === id);
+const target = id => id === "boss" ? state.boss : id === "stock" ? state.stock : id === "maint" ? state.maint : state.people.find(p => p.id === id);
 
 /* ---------- bonificação ---------- */
 function calc(p, mk){
@@ -282,23 +337,34 @@ function calc(p, mk){
 }
 
 /* ---------- árvore ---------- */
-function card(p, id, boss){
+function card(p, id){
+  const boss = id === "boss", side = id === "stock" || id === "maint";
   const el = document.createElement("div");
-  el.className = "node" + (boss ? " boss" : "");
+  el.className = "node" + (boss ? " boss" : side ? " side" : "");
   el.dataset.id = id;
   let bar, l, r, extra = "";
   if (boss) {
     const t = p.tasks.filter(x => x.date === todayIso());
     const d = t.filter(x => x.done).length;
     bar = t.length ? Math.round(d / t.length * 100) : 0; l = `Hoje: ${d}/${t.length} feitas`; r = bar + "%";
+  } else if (id === "stock") {
+    const k = stockStats(p), bad = k.out + k.low;
+    bar = k.n ? Math.round((k.n - bad) / k.n * 100) : 0; l = `${k.n} produtos`; r = brl(k.cost);
+    extra = bad ? `<div class="badge bad">⚠ ${bad} em falta/baixo</div>` : (k.n ? `<div class="badge good">✔ Tudo em dia</div>` : "");
+  } else if (id === "maint") {
+    const done = p.items.filter(i => i.status === "concluida").length, open = p.items.length - done;
+    const urg = p.items.filter(i => i.status !== "concluida" && i.pri === "alta").length;
+    bar = p.items.length ? Math.round(done / p.items.length * 100) : 0; l = `${open} em aberto`; r = `${done} concluídas`;
+    extra = urg ? `<div class="badge bad">🔴 ${urg} urgente${urg > 1 ? "s" : ""}</div>` : "";
   } else {
     el.style.setProperty("--c", p.color);
     const c = calc(p, monthKey(new Date()));
     bar = Math.round(c.pct); l = "Nota do mês"; r = bar + "%";
     if (p.bonus.on) extra = `<div class="badge">💰 ${brl(c.money)}</div>`;
   }
+  const icon = boss ? "🧠" : id === "stock" ? "📦" : id === "maint" ? "🔧" : esc(initial(p.name));
   el.innerHTML = `
-    <div class="avatar">${boss ? "🧠" : esc(initial(p.name))}</div>
+    <div class="avatar">${icon}</div>
     <h3>${esc(p.name)}</h3>
     <div class="role">${esc(p.role || "")}</div>
     <div class="bar"><i style="width:${bar}%"></i></div>
@@ -306,12 +372,15 @@ function card(p, id, boss){
   el.onclick = () => openPanel(id);
   return el;
 }
+const cardFor = id => card(target(id), id);
 
 function render(){
   const rw = $("#rootWrap"), row = $("#row");
   rw.innerHTML = ""; row.innerHTML = "";
-  rw.appendChild(card(state.boss, "boss", true));
-  state.people.forEach(p => row.appendChild(card(p, p.id, false)));
+  const hub = document.createElement("div"); hub.className = "hub"; hub.id = "hub";
+  hub.append(cardFor("maint"), cardFor("boss"), cardFor("stock"));
+  rw.appendChild(hub);
+  state.people.forEach(p => row.appendChild(card(p, p.id)));
   const add = document.createElement("div");
   add.className = "node add";
   add.innerHTML = "<div><span>+</span><div>Novo funcionário</div></div>";
@@ -334,6 +403,16 @@ function drawLines(){
     out += `<path d="M${x1},${y1} C${x1},${y1+dy} ${x2},${y2-dy} ${x2},${y2}"/>`;
     out += `<polygon points="${x2-7},${y2-4} ${x2+7},${y2-4} ${x2},${y2+7}"/>`;
   });
+  if (getComputedStyle($("#hub")).flexDirection === "row") {
+    const y = b.top + b.height/2 - tr.top;
+    [["maint", -1], ["stock", 1]].forEach(([id, d]) => {
+      const n = document.querySelector(`.node[data-id="${id}"]`); if (!n) return;
+      const r = n.getBoundingClientRect();
+      const xa = (d < 0 ? b.left : b.right) - tr.left, tip = (d < 0 ? r.right + 6 : r.left - 6) - tr.left;
+      out += `<path d="M${xa},${y} L${tip - d*8},${y}"/>`;
+      out += `<polygon points="${tip},${y} ${tip - d*11},${y-7} ${tip - d*11},${y+7}"/>`;
+    });
+  }
   svg.innerHTML = out;
 }
 addEventListener("resize", drawLines);
@@ -348,6 +427,7 @@ function addPerson(){
 const panel = $("#panel");
 function openPanel(id, focusName){
   ui.id = id; ui.tab = "demanda"; ui.mk = monthKey(new Date()); ui.cur = todayIso();
+  ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas";
   renderPanel();
   panel.scrollTop = 0;
   panel.classList.add("open"); $("#overlay").classList.add("open");
@@ -360,13 +440,14 @@ function closePanel(){
 $("#overlay").onclick = closePanel;
 addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
 
-function header(p, boss){
-  const bg = boss ? "linear-gradient(135deg,#7c5cff,#22d3ee)" : p.color;
+const ICONS = { boss:"🧠", stock:"📦", maint:"🔧" };
+function header(p, icon){
+  const bg = icon ? "linear-gradient(135deg,#7c5cff,#22d3ee)" : p.color;
   return `<div class="ph">
-    <div class="avatar" style="background:${bg}">${boss ? "🧠" : esc(initial(p.name))}</div>
+    <div class="avatar" style="background:${bg}">${icon || esc(initial(p.name))}</div>
     <div class="info">
       <input class="name" data-f="name" value="${esc(p.name)}" aria-label="Nome">
-      <input class="rolei" data-f="role" value="${esc(p.role || "")}" placeholder="Cargo / função" aria-label="Cargo">
+      <input class="rolei" data-f="role" value="${esc(p.role || "")}" placeholder="Cargo / descrição" aria-label="Cargo">
     </div>
     <button class="x" data-act="close" aria-label="Fechar">✕</button>
   </div>`;
@@ -374,11 +455,11 @@ function header(p, boss){
 
 function renderPanel(){
   const p = target(ui.id); if (!p) return closePanel();
-  const sc = panel.scrollTop;
-  const boss = ui.id === "boss";
-  panel.classList.toggle("wide", boss);
-  panel.style.setProperty("--c", boss ? "var(--accent)" : p.color);
-  panel.innerHTML = header(p, boss) + (boss ? bossHtml(p) : empHtml(p));
+  const sc = panel.scrollTop, id = ui.id, side = id in ICONS;
+  panel.classList.toggle("wide", side);
+  panel.style.setProperty("--c", side ? "var(--accent)" : p.color);
+  const body = id === "boss" ? bossHtml(p) : id === "stock" ? stockHtml(p) : id === "maint" ? maintHtml(p) : empHtml(p);
+  panel.innerHTML = header(p, ICONS[id]) + body;
   panel.scrollTop = sc;
 }
 
@@ -527,6 +608,223 @@ function bossHtml(p){
   return views + nav + form + body;
 }
 
+/* ---------- estoque ---------- */
+const UNITS = ["un","cx","pç","kg","g","m","L","pct","par"];
+const num = v => { const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : 0; };
+const fmtQ = n => (Math.round(n * 1000) / 1000).toLocaleString("pt-BR");
+const fmtDT = s => { const d = new Date(s); return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" }); };
+const fmtD = s => s ? s.split("-").reverse().join("/") : "";
+const stStatus = i => i.qty <= 0 ? ["Sem estoque", "bad"] : (i.min > 0 && i.qty <= i.min ? ["Baixo", "warn"] : ["OK", "ok"]);
+const MV = { in:["Entrada","ok"], out:["Saída","bad"], adj:["Ajuste","warn"] };
+
+function stockStats(s){
+  let units = 0, cost = 0, sale = 0, low = 0, out = 0;
+  s.items.forEach(i => { units += i.qty; cost += i.qty * i.cost; sale += i.qty * i.price;
+    if (i.qty <= 0) out++; else if (i.min > 0 && i.qty <= i.min) low++; });
+  return { n:s.items.length, units, cost, sale, low, out };
+}
+
+function stockHtml(s){
+  const k = stockStats(s);
+  const kp = (l, v, c = "") => `<div class="kpi ${c}"><small>${l}</small><b>${v}</b></div>`;
+  const cats = [...new Set(s.items.map(i => i.category).filter(Boolean))].sort();
+  let h = `<div class="kpis">${kp("Produtos cadastrados", k.n)}${kp("Valor em estoque (custo)", brl(k.cost))}
+    ${kp("Valor de venda potencial", brl(k.sale))}${kp("Atenção", `${k.out} sem estoque · ${k.low} baixo`, k.out + k.low ? "warn" : "")}</div>`;
+  h += `<div class="tabs"><button data-act="stab" data-t="prod" class="${ui.stab==="prod"?"on":""}">Produtos</button>
+    <button data-act="stab" data-t="mov" class="${ui.stab==="mov"?"on":""}">Movimentações</button></div>`;
+  h += `<div class="addform"><input type="text" data-f="q" placeholder="Buscar produto, SKU, local, fornecedor…" value="${esc(ui.q)}" autocomplete="off">`;
+  if (ui.stab === "prod") h += `<select data-f="cat" aria-label="Categoria"><option value="">Todas as categorias</option>
+      ${cats.map(c => `<option ${c===ui.cat?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <button class="btn primary" data-act="newprod">+ Novo produto</button><button class="btn" data-act="csv">Exportar CSV</button>`;
+  h += `</div>`;
+  if (ui.formOpen) h += prodForm(s, cats);
+  if (ui.mov) {
+    const it = s.items.find(i => i.id === ui.mov.id), t = ui.mov.type;
+    if (it) h += `<form class="addform movf" data-form="move"><b>${t==="in" ? "➕ Entrada" : t==="out" ? "➖ Saída" : "⚖ Ajuste de inventário"} — ${esc(it.name)}
+      <small style="color:var(--muted)">(saldo atual: ${fmtQ(it.qty)} ${esc(it.unit)})</small></b>
+      <input type="number" name="qty" step="any" min="0" placeholder="${t==="adj" ? "Quantidade contada" : "Quantidade"}" required>
+      <input type="text" name="note" placeholder="Observação (nota fiscal, motivo, quem retirou…)">
+      <button class="go" type="submit" aria-label="Confirmar">✓</button>
+      <button class="btn" type="button" data-act="cancel">Cancelar</button></form>`;
+  }
+  return h + `<div id="stlist">${stockList()}</div>`;
+}
+
+function prodForm(s, cats){
+  const it = ui.edit ? s.items.find(i => i.id === ui.edit) : null;
+  const v = k => it ? esc(it[k]) : "";
+  const fld = (label, name, type = "text", extra = "", cls = "") =>
+    `<label class="fld ${cls}">${label}<input type="${type}" name="${name}" value="${v(name)}" ${extra}></label>`;
+  return `<form class="pf" data-form="prod">
+    <input type="hidden" name="id" value="${it ? it.id : ""}">
+    ${fld("Produto *", "text", "text", "required", "wide").replace(`value="${v("text")}"`, `value="${it ? esc(it.name) : ""}"`)}
+    ${fld("Código / SKU", "sku")}
+    <label class="fld">Categoria<input type="text" name="category" list="cats" value="${v("category")}"><datalist id="cats">${cats.map(c => `<option value="${esc(c)}">`).join("")}</datalist></label>
+    <label class="fld">Unidade<select name="unit">${UNITS.map(u => `<option ${it && it.unit===u ? "selected" : ""}>${u}</option>`).join("")}</select></label>
+    ${it ? "" : fld("Quantidade inicial", "qty", "number", 'min="0" step="any"')}
+    ${fld("Estoque mínimo", "min", "number", 'min="0" step="any"')}
+    ${fld("Custo unitário (R$)", "cost", "number", 'min="0" step="0.01"')}
+    ${fld("Preço de venda (R$)", "price", "number", 'min="0" step="0.01"')}
+    ${fld("Local / prateleira", "location")}
+    ${fld("Fornecedor", "supplier")}
+    <div class="bt"><button type="button" class="btn" data-act="cancel">Cancelar</button><button type="submit" class="btn primary">${it ? "Salvar alterações" : "Cadastrar produto"}</button></div>
+  </form>`;
+}
+
+function stockList(){
+  const s = state.stock, q = ui.q.trim().toLowerCase();
+  if (ui.stab === "mov") {
+    const rows = s.moves.filter(m => !q || (m.pname + " " + m.note).toLowerCase().includes(q)).slice(0, 200);
+    if (!rows.length) return `<div class="empty">Nenhuma movimentação registrada.</div>`;
+    return `<div class="tw"><table><tr><th>Data</th><th>Produto</th><th>Tipo</th><th class="r">Qtd</th><th class="r">Saldo</th><th>Obs.</th></tr>` +
+      rows.map(m => `<tr><td>${fmtDT(m.date)}</td><td>${esc(m.pname)}</td><td><span class="pill ${MV[m.type][1]}">${MV[m.type][0]}</span></td>
+        <td class="r">${m.delta > 0 ? "+" : ""}${fmtQ(m.delta)} ${esc(m.unit)}</td><td class="r">${fmtQ(m.after)}</td><td>${esc(m.note || "")}</td></tr>`).join("") + `</table></div>`;
+  }
+  const rows = s.items.filter(i => (!ui.cat || i.category === ui.cat) &&
+    (!q || [i.name, i.sku, i.category, i.location, i.supplier].join(" ").toLowerCase().includes(q)))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (!rows.length) return `<div class="empty">${s.items.length ? "Nada encontrado com esse filtro." : "Estoque vazio.<br>Clique em “+ Novo produto” para lançar o primeiro."}</div>`;
+  const tot = rows.reduce((a, i) => a + i.qty * i.cost, 0);
+  return `<div class="tw"><table><tr><th>SKU</th><th>Produto</th><th>Categoria</th><th class="r">Qtd</th><th class="r">Mín.</th>
+    <th class="r">Custo</th><th class="r">Preço</th><th class="r">Valor (custo)</th><th></th></tr>` +
+    rows.map(i => { const [lb, cl] = stStatus(i); return `<tr>
+      <td>${esc(i.sku)}</td>
+      <td><b>${esc(i.name)}</b><small>${[i.location && "📍 " + esc(i.location), i.supplier && esc(i.supplier)].filter(Boolean).join(" · ")}</small></td>
+      <td>${esc(i.category)}</td>
+      <td class="r"><span class="pill ${cl}" title="${lb}">${fmtQ(i.qty)} ${esc(i.unit)}</span></td>
+      <td class="r">${i.min ? fmtQ(i.min) : "—"}</td><td class="r">${brl(i.cost)}</td><td class="r">${brl(i.price)}</td>
+      <td class="r">${brl(i.qty * i.cost)}</td>
+      <td class="act">
+        <button class="ib" data-act="mov" data-t="in" data-id="${i.id}" title="Entrada" aria-label="Entrada">➕</button>
+        <button class="ib" data-act="mov" data-t="out" data-id="${i.id}" title="Saída" aria-label="Saída">➖</button>
+        <button class="ib" data-act="mov" data-t="adj" data-id="${i.id}" title="Ajustar (inventário)" aria-label="Ajustar">⚖</button>
+        <button class="ib" data-act="edit" data-id="${i.id}" title="Editar" aria-label="Editar">✎</button>
+        <button class="ib" data-act="delprod" data-id="${i.id}" title="Excluir" aria-label="Excluir">✕</button></td></tr>`; }).join("") +
+    `<tr><td colspan="7" style="color:var(--muted)">${rows.length} produto(s)</td><td class="r"><b>${brl(tot)}</b></td><td></td></tr></table></div>`;
+}
+
+function stockClick(a, D, s){
+  if (a === "stab") { ui.stab = D.t; ui.formOpen = false; ui.mov = null; renderPanel(); return true; }
+  if (a === "newprod") { ui.formOpen = !ui.formOpen; ui.edit = null; ui.mov = null; renderPanel(); return true; }
+  if (a === "edit") { ui.edit = D.id; ui.formOpen = true; ui.mov = null; renderPanel(); return true; }
+  if (a === "cancel") { ui.formOpen = false; ui.edit = null; ui.mov = null; renderPanel(); return true; }
+  if (a === "mov") { ui.mov = { id:D.id, type:D.t }; ui.formOpen = false; renderPanel(); const q = panel.querySelector('[name=qty]'); if (q) q.focus(); return true; }
+  if (a === "delprod") {
+    const it = s.items.find(i => i.id === D.id);
+    if (!confirm(`Excluir "${it.name}" do estoque?`)) return true;
+    s.items = s.items.filter(i => i !== it); s.moves = s.moves.filter(m => m.pid !== it.id); refresh(); return true;
+  }
+  if (a === "csv") {
+    const head = ["SKU","Produto","Categoria","Unidade","Quantidade","Mínimo","Custo","Preço","Local","Fornecedor"];
+    const rows = s.items.map(i => [i.sku, i.name, i.category, i.unit, i.qty, i.min, i.cost, i.price, i.location, i.supplier]);
+    const csv = [head, ...rows].map(r => r.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+    const el = document.createElement("a");
+    el.href = URL.createObjectURL(new Blob(["﻿" + csv], { type:"text/csv;charset=utf-8" }));
+    el.download = `estoque-${todayIso()}.csv`; el.click(); URL.revokeObjectURL(el.href); return true;
+  }
+  return false;
+}
+
+/* ---------- manutenções ---------- */
+const MST = { aberta:["Aberta","warn"], andamento:["Em andamento","info"], concluida:["Concluída","ok"] };
+const PRI_L = { alta:"Alta", media:"Média", baixa:"Baixa" };
+const respList = cur => { const l = ["Eu", ...state.people.map(p => p.name)]; if (cur && !l.includes(cur)) l.push(cur); return l; };
+
+function maintHtml(m){
+  const c = k => m.items.filter(i => i.status === k).length;
+  const kp = (l, v, cl = "") => `<div class="kpi ${cl}"><small>${l}</small><b>${v}</b></div>`;
+  const urg = m.items.filter(i => i.status !== "concluida" && i.pri === "alta").length;
+  let h = `<div class="kpis">${kp("Abertas", c("aberta"))}${kp("Em andamento", c("andamento"))}${kp("Concluídas", c("concluida"))}${kp("Urgentes em aberto", urg, urg ? "warn" : "")}</div>`;
+  h += `<form class="pf" data-form="maint">
+    <label class="fld wide">Equipamento *<input type="text" name="text" placeholder="Ex.: Ar-condicionado da loja, Impressora fiscal…" required></label>
+    <label class="fld">Local / setor<input type="text" name="loc"></label>
+    <label class="fld">Prioridade<select name="pri"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option></select></label>
+    <label class="fld wide">O que é (problema)<textarea name="problem" rows="2"></textarea></label>
+    <label class="fld wide">O que precisa ser feito<textarea name="todo" rows="2"></textarea></label>
+    <label class="fld">Responsável<select name="resp">${respList().map(r => `<option>${esc(r)}</option>`).join("")}</select></label>
+    <div class="bt" style="align-items:flex-end"><button type="submit" class="btn primary">+ Registrar manutenção</button></div></form>`;
+  h += `<div class="seg">${[["todas","Todas"],["aberta","Abertas"],["andamento","Em andamento"],["concluida","Concluídas"]].map(([k, l]) =>
+    `<button data-act="mf" data-v="${k}" class="${ui.mf===k?"on":""}">${l}</button>`).join("")}</div>`;
+  const order = { alta:0, media:1, baixa:2 };
+  const rows = m.items.filter(i => ui.mf === "todas" || i.status === ui.mf)
+    .sort((a, b) => (a.status === "concluida") - (b.status === "concluida") || order[a.pri] - order[b.pri] || b.opened.localeCompare(a.opened));
+  h += `<ul>` + (rows.map(i => `<li class="stk mi ${i.status==="concluida"?"fin":""}">
+    <div class="top"><span class="pri ${i.pri}" title="Prioridade ${PRI_L[i.pri]}"></span>
+      <input class="eq" data-f="mequip" data-id="${i.id}" value="${esc(i.equip)}" aria-label="Equipamento">
+      <span class="pill ${MST[i.status][1]}">${MST[i.status][0]}</span>
+      <button class="del" data-act="mdel" data-id="${i.id}" aria-label="Remover">✕</button></div>
+    <div class="mgrid">
+      <label class="fld">O que é (problema)<textarea rows="2" data-f="mproblem" data-id="${i.id}">${esc(i.problem)}</textarea></label>
+      <label class="fld">O que precisa ser feito<textarea rows="2" data-f="mtodo" data-id="${i.id}">${esc(i.todo)}</textarea></label>
+      <label class="fld">O que foi feito<textarea rows="2" data-f="mdone" data-id="${i.id}">${esc(i.done)}</textarea></label></div>
+    <div class="cfg">Local <input type="text" data-f="mloc" data-id="${i.id}" value="${esc(i.loc)}">
+      Prioridade <select data-f="mpri" data-id="${i.id}">${Object.keys(PRI_L).map(k => `<option value="${k}" ${i.pri===k?"selected":""}>${PRI_L[k]}</option>`).join("")}</select>
+      Responsável <select data-f="mresp" data-id="${i.id}">${respList(i.resp).map(r => `<option ${r===i.resp?"selected":""}>${esc(r)}</option>`).join("")}</select>
+      · Aberta em ${fmtD(i.opened)}${i.closed ? ` · Concluída em ${fmtD(i.closed)}` : ""}</div>
+    <div class="seg">${Object.keys(MST).map(k => `<button data-act="mstatus" data-id="${i.id}" data-v="${k}" class="${i.status===k?"on":""}">${MST[k][0]}</button>`).join("")}</div>
+  </li>`).join("") || `<div class="empty">Nenhuma manutenção ${ui.mf === "todas" ? "registrada" : "neste filtro"}.</div>`) + `</ul>`;
+  return h;
+}
+
+function maintClick(a, D, m){
+  if (a === "mf") { ui.mf = D.v; renderPanel(); return true; }
+  if (a === "mstatus") { const i = m.items.find(x => x.id === D.id); i.status = D.v; i.closed = D.v === "concluida" ? todayIso() : ""; refresh(); return true; }
+  if (a === "mdel") {
+    const i = m.items.find(x => x.id === D.id);
+    if (!confirm(`Remover a manutenção de "${i.equip}"?`)) return true;
+    m.items = m.items.filter(x => x !== i); refresh(); return true;
+  }
+  return false;
+}
+
+function sideChange(e, f, p){
+  const t = e.target;
+  if (f === "cat") { ui.cat = t.value; renderPanel(); return; }
+  const map = { mequip:"equip", mproblem:"problem", mtodo:"todo", mdone:"done", mloc:"loc", mpri:"pri", mresp:"resp" };
+  if (!map[f]) return;
+  const i = p.items.find(x => x.id === t.dataset.id); if (!i) return;
+  i[map[f]] = t.value; save(); render();
+  if (f === "mpri" || f === "mresp") renderPanel();
+}
+
+function sideSubmit(form, fd, p){
+  const kind = form.dataset.form;
+  if (kind === "prod") {
+    const name = (fd.get("text") || "").trim(); if (!name) return;
+    const data = { name, sku:(fd.get("sku") || "").trim(), category:(fd.get("category") || "").trim(), unit:fd.get("unit") || "un",
+      min:Math.max(0, num(fd.get("min"))), cost:Math.max(0, num(fd.get("cost"))), price:Math.max(0, num(fd.get("price"))),
+      location:(fd.get("location") || "").trim(), supplier:(fd.get("supplier") || "").trim() };
+    const id = fd.get("id");
+    if (id) Object.assign(p.items.find(i => i.id === id), data);
+    else {
+      const it = Object.assign({ id:uid(), qty:0 }, data), q = Math.max(0, num(fd.get("qty")));
+      p.items.push(it);
+      if (q > 0) { it.qty = q; stockMove(p, it, "in", q, "Estoque inicial"); }
+    }
+    ui.formOpen = false; ui.edit = null; return refresh();
+  }
+  if (kind === "move") {
+    const it = p.items.find(i => i.id === ui.mov.id), t = ui.mov.type, q = num(fd.get("qty")), note = (fd.get("note") || "").trim();
+    if (!it || q < 0 || (t !== "adj" && q <= 0)) return;
+    let delta;
+    if (t === "in") delta = q;
+    else if (t === "out") { if (q > it.qty) { alert(`Saldo insuficiente: só há ${fmtQ(it.qty)} ${it.unit} em estoque.`); return; } delta = -q; }
+    else delta = q - it.qty;
+    if (delta !== 0) { it.qty += delta; stockMove(p, it, t, delta, note); }
+    ui.mov = null; return refresh();
+  }
+  if (kind === "maint") {
+    const equip = (fd.get("text") || "").trim(); if (!equip) return;
+    p.items.push({ id:uid(), equip, loc:(fd.get("loc") || "").trim(), problem:(fd.get("problem") || "").trim(), todo:(fd.get("todo") || "").trim(),
+      done:"", pri:fd.get("pri") || "media", resp:fd.get("resp") || "Eu", status:"aberta", opened:todayIso(), closed:"" });
+    return refresh();
+  }
+}
+function stockMove(s, it, type, delta, note){
+  s.moves.unshift({ id:uid(), pid:it.id, pname:it.name, unit:it.unit, type, delta, after:it.qty, note, date:new Date().toISOString() });
+  if (s.moves.length > 3000) s.moves.length = 3000;
+}
+
 /* ---------- eventos do painel ---------- */
 function refresh(){ save(); renderPanel(); render(); }
 panel.addEventListener("click", e => {
@@ -535,6 +833,8 @@ panel.addEventListener("click", e => {
   const item = () => p.items.find(i => i.id === D.id);
   const task = () => p.tasks.find(t => t.id === D.id);
   if (a === "close") return closePanel();
+  if (ui.id === "stock" && stockClick(a, D, p)) return;
+  if (ui.id === "maint" && maintClick(a, D, p)) return;
   if (a === "tab") { ui.tab = D.t; return renderPanel(); }
   if (a === "mnav") { ui.mk = shiftMonth(ui.mk, +D.d); return renderPanel(); }
   if (a === "day") { const i = item(); i.days[D.day] = !i.days[D.day]; if (!i.days[D.day]) delete i.days[D.day]; return refresh(); }
@@ -563,14 +863,16 @@ panel.addEventListener("click", e => {
 });
 panel.addEventListener("input", e => {
   const f = e.target.dataset.f, p = target(ui.id);
+  if (f === "q") { ui.q = e.target.value; const l = $("#stlist"); if (l) l.innerHTML = stockList(); return; }
   if (f !== "name" && f !== "role") return;
   if (f === "name") p.name = e.target.value || "Sem nome"; else p.role = e.target.value;
   save();
   const old = document.querySelector(`.node[data-id="${ui.id}"]`);
-  old.replaceWith(card(p, ui.id, ui.id === "boss")); drawLines();
+  old.replaceWith(cardFor(ui.id)); drawLines();
 });
 panel.addEventListener("change", e => {
-  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role") return;
+  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role" || f === "q") return;
+  if (ui.id === "stock" || ui.id === "maint") return sideChange(e, f, p);
   const v = Math.max(0, +e.target.value || 0);
   if (f === "amount" || f === "min") p.bonus[f] = v;
   else { const i = p.items.find(x => x.id === e.target.dataset.id); i[f] = v; }
@@ -579,6 +881,7 @@ panel.addEventListener("change", e => {
 panel.addEventListener("submit", e => {
   e.preventDefault();
   const p = target(ui.id), fd = new FormData(e.target), text = (fd.get("text") || "").trim();
+  if (ui.id === "stock" || ui.id === "maint") return sideSubmit(e.target, fd, p);
   if (!text) return;
   if (e.target.dataset.form === "task") {
     p.tasks.push({ id:uid(), text, date:fd.get("date") || ui.cur, time:fd.get("time") || "", done:false });
