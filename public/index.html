@@ -177,6 +177,19 @@ td.r,th.r{text-align:right}
 .ym small{color:var(--muted)}
 .sub{font-weight:700;color:var(--muted);font-size:.85rem;margin-top:4px}
 
+.sync{font-size:.8rem;color:var(--muted);align-self:center}
+.sync.ok{color:var(--ok)}.sync.bad{color:var(--danger)}
+.srv-only{display:none}
+body.srv .srv-only{display:inline-block}
+body.davi .owner-only{display:none}
+.locked{max-width:420px;margin:18vh auto 0;padding:32px;text-align:center;background:var(--card);border-radius:var(--radius);border:1px solid #2f3566}
+.locked h2{margin:0 0 8px}.locked p{color:var(--muted);margin:0}
+#modal{position:fixed;inset:0;background:#050610aa;backdrop-filter:blur(4px);display:none;place-items:center;z-index:20;padding:16px}
+#modal.open{display:grid}
+#modal .box{background:var(--bg2);border-radius:28px;padding:26px;width:min(520px,100%);display:flex;flex-direction:column;gap:14px;border:1px solid #2f3566}
+#modal h3{margin:0}
+#modal .lnk{background:var(--bg);border-radius:16px;padding:12px 14px;font-size:.8rem;word-break:break-all;color:var(--muted);user-select:all}
+#modal .row2{display:flex;gap:8px;flex-wrap:wrap}
 .hub{display:flex;align-items:center;justify-content:center;gap:110px}
 .node.side{width:250px}
 .node.side .avatar{font-size:1.9rem;background:linear-gradient(135deg,#0ea5e9,#6366f1)}
@@ -235,11 +248,13 @@ li.mi.fin{opacity:.8}
 </head>
 <body>
 <header>
-  <h1>🧠 MINHA EQUIPE</h1>
+  <h1 id="title">🧠 MINHA EQUIPE</h1>
   <div class="actions">
-    <button class="btn" id="exp">Exportar backup</button>
-    <button class="btn" id="imp">Importar</button>
-    <button class="btn primary" id="addTop">+ Funcionário</button>
+    <span class="sync" id="sync"></span>
+    <button class="btn srv-only" id="acc">🔑 Acesso do Davi</button>
+    <button class="btn owner-only" id="exp">Exportar backup</button>
+    <button class="btn owner-only" id="imp">Importar</button>
+    <button class="btn primary owner-only" id="addTop">+ Funcionário</button>
     <input type="file" id="file" accept="application/json" hidden>
   </div>
 </header>
@@ -253,8 +268,9 @@ li.mi.fin{opacity:.8}
 <div id="overlay"></div>
 <aside id="panel" aria-live="polite"></aside>
 
+<script src="merge.js"></script>
 <script>
-const KEY = "minha-equipe-v1";
+let KEY = "minha-equipe-v1";
 const COLORS = ["#7c5cff","#22d3ee","#f472b6","#fb923c","#34d399","#facc15","#60a5fa","#f87171"];
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const DSEM = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -277,6 +293,7 @@ const todayIso = () => iso(new Date());
 /* ---------- dados ---------- */
 function normalize(s){
   const mk = monthKey(new Date());
+  s.people = Array.isArray(s.people) ? s.people : [];
   s.boss = s.boss || { name:"Eu", role:"Dono / Gestor" };
   if (!Array.isArray(s.boss.tasks)) {
     s.boss.tasks = (s.boss.items || []).map(i => ({ id:i.id || uid(), text:i.text, date:i.due || todayIso(), time:"", done:!!i.done }));
@@ -284,11 +301,13 @@ function normalize(s){
   delete s.boss.items;
   s.stock = Object.assign({ name:"Estoque", role:"Produtos da loja", items:[], moves:[] }, s.stock);
   s.stock.items = s.stock.items.map(i => ({ id:i.id || uid(), name:i.name || "Produto", sku:i.sku || "", category:i.category || "",
-    unit:i.unit || "un", qty:+i.qty || 0, min:+i.min || 0, cost:+i.cost || 0, price:+i.price || 0, location:i.location || "", supplier:i.supplier || "" }));
+    unit:i.unit || "un", qty:+i.qty || 0, min:+i.min || 0, cost:+i.cost || 0, price:+i.price || 0, location:i.location || "", supplier:i.supplier || "", u:+i.u || 0, ub:i.ub || "" }));
   s.stock.moves = s.stock.moves || [];
   s.maint = Object.assign({ name:"Manutenções", role:"Equipamentos e reparos", items:[] }, s.maint);
   s.maint.items = s.maint.items.map(i => ({ id:i.id || uid(), equip:i.equip || "Equipamento", loc:i.loc || "", problem:i.problem || "", todo:i.todo || "",
-    done:i.done || "", pri:i.pri || "media", resp:i.resp || "Eu", status:i.status || "aberta", opened:i.opened || todayIso(), closed:i.closed || "" }));
+    done:i.done || "", pri:i.pri || "media", resp:i.resp || "Eu", status:i.status || "aberta", opened:i.opened || todayIso(), closed:i.closed || "", by:i.by || "Eu", c:+i.c || 0, u:+i.u || 0, ub:i.ub || "" }));
+  s.stock.moves = s.stock.moves.map(m => Object.assign({ by:"Eu" }, m));
+  s.stock.del = s.stock.del || {}; s.maint.del = s.maint.del || {};
   s.people.forEach(p => {
     p.bonus = Object.assign({ on:false, amount:0, min:0 }, p.bonus);
     p.items = (p.items || []).map(i => {
@@ -304,10 +323,19 @@ function load(){
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.boss && Array.isArray(s.people)) return normalize(s); } catch(e){}
   return normalize({ boss:{ name:"Eu", role:"Dono / Gestor" }, people:[] });
 }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+const persistLocal = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} };
+let coreU = 0, syncTimer = null;
+function save(){
+  persistLocal();
+  if (MODE === "owner" || MODE === "davi") { coreU = Date.now(); setSync("Salvando…"); clearTimeout(syncTimer); syncTimer = setTimeout(push, 500); }
+}
 
-let state = load();
-let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas" };
+let state;
+let MODE = "local";
+const ME = () => MODE === "davi" ? "Davi" : "Eu";
+const byLabel = b => b === "Eu" && MODE === "davi" ? "Dono" : b;
+const stamp = o => { o.u = Date.now(); o.ub = ME(); return o; };
+let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas", prevSeen:0 };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -351,11 +379,13 @@ function card(p, id){
     const k = stockStats(p), bad = k.out + k.low;
     bar = k.n ? Math.round((k.n - bad) / k.n * 100) : 0; l = `${k.n} produtos`; r = brl(k.cost);
     extra = bad ? `<div class="badge bad">⚠ ${bad} em falta/baixo</div>` : (k.n ? `<div class="badge good">✔ Tudo em dia</div>` : "");
+    extra += newBadge("stock");
   } else if (id === "maint") {
     const done = p.items.filter(i => i.status === "concluida").length, open = p.items.length - done;
     const urg = p.items.filter(i => i.status !== "concluida" && i.pri === "alta").length;
     bar = p.items.length ? Math.round(done / p.items.length * 100) : 0; l = `${open} em aberto`; r = `${done} concluídas`;
     extra = urg ? `<div class="badge bad">🔴 ${urg} urgente${urg > 1 ? "s" : ""}</div>` : "";
+    extra += newBadge("maint");
   } else {
     el.style.setProperty("--c", p.color);
     const c = calc(p, monthKey(new Date()));
@@ -374,18 +404,31 @@ function card(p, id){
 }
 const cardFor = id => card(target(id), id);
 
+/* ---------- novidades lançadas pelo Davi ---------- */
+const seenKey = id => "seen-" + id;
+const getSeen = id => { try { return +localStorage.getItem(seenKey(id)) || 0; } catch(e) { return 0; } };
+function newFromDavi(id){
+  const seen = getSeen(id);
+  return id === "stock" ? state.stock.moves.filter(m => m.by === "Davi" && Date.parse(m.date) > seen).length
+    : state.maint.items.filter(i => i.ub === "Davi" && i.u > seen).length;
+}
+const newBadge = id => { const n = MODE === "owner" ? newFromDavi(id) : 0; return n ? `<div class="badge">🆕 ${n} do Davi</div>` : ""; };
+
 function render(){
   const rw = $("#rootWrap"), row = $("#row");
   rw.innerHTML = ""; row.innerHTML = "";
   const hub = document.createElement("div"); hub.className = "hub"; hub.id = "hub";
-  hub.append(cardFor("maint"), cardFor("boss"), cardFor("stock"));
+  if (MODE === "davi") hub.append(cardFor("maint"), cardFor("stock"));
+  else hub.append(cardFor("maint"), cardFor("boss"), cardFor("stock"));
   rw.appendChild(hub);
-  state.people.forEach(p => row.appendChild(card(p, p.id)));
-  const add = document.createElement("div");
-  add.className = "node add";
-  add.innerHTML = "<div><span>+</span><div>Novo funcionário</div></div>";
-  add.onclick = addPerson;
-  row.appendChild(add);
+  if (MODE !== "davi") {
+    state.people.forEach(p => row.appendChild(card(p, p.id)));
+    const add = document.createElement("div");
+    add.className = "node add";
+    add.innerHTML = "<div><span>+</span><div>Novo funcionário</div></div>";
+    add.onclick = addPerson;
+    row.appendChild(add);
+  }
   requestAnimationFrame(drawLines);
 }
 
@@ -393,7 +436,9 @@ function drawLines(){
   const svg = $("#lines"), tree = $("#tree");
   const tr = tree.getBoundingClientRect();
   svg.setAttribute("viewBox", `0 0 ${tr.width} ${tr.height}`);
-  const b = $(".node.boss").getBoundingClientRect();
+  const bn = $(".node.boss");
+  if (!bn) { svg.innerHTML = ""; return; }
+  const b = bn.getBoundingClientRect();
   const x1 = b.left + b.width/2 - tr.left, y1 = b.bottom - tr.top;
   let out = "";
   document.querySelectorAll("#row .node:not(.add)").forEach(n => {
@@ -426,6 +471,8 @@ function addPerson(){
 /* ---------- painel ---------- */
 const panel = $("#panel");
 function openPanel(id, focusName){
+  ui.prevSeen = 0;
+  if (MODE === "owner" && (id === "stock" || id === "maint")) { ui.prevSeen = getSeen(id); try { localStorage.setItem(seenKey(id), String(Date.now())); } catch(e) {} }
   ui.id = id; ui.tab = "demanda"; ui.mk = monthKey(new Date()); ui.cur = todayIso();
   ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas";
   renderPanel();
@@ -446,8 +493,8 @@ function header(p, icon){
   return `<div class="ph">
     <div class="avatar" style="background:${bg}">${icon || esc(initial(p.name))}</div>
     <div class="info">
-      <input class="name" data-f="name" value="${esc(p.name)}" aria-label="Nome">
-      <input class="rolei" data-f="role" value="${esc(p.role || "")}" placeholder="Cargo / descrição" aria-label="Cargo">
+      <input class="name" data-f="name" value="${esc(p.name)}" aria-label="Nome" ${MODE === "davi" ? "readonly" : ""}>
+      <input class="rolei" data-f="role" value="${esc(p.role || "")}" placeholder="Cargo / descrição" aria-label="Cargo" ${MODE === "davi" ? "readonly" : ""}>
     </div>
     <button class="x" data-act="close" aria-label="Fechar">✕</button>
   </div>`;
@@ -676,9 +723,9 @@ function stockList(){
   if (ui.stab === "mov") {
     const rows = s.moves.filter(m => !q || (m.pname + " " + m.note).toLowerCase().includes(q)).slice(0, 200);
     if (!rows.length) return `<div class="empty">Nenhuma movimentação registrada.</div>`;
-    return `<div class="tw"><table><tr><th>Data</th><th>Produto</th><th>Tipo</th><th class="r">Qtd</th><th class="r">Saldo</th><th>Obs.</th></tr>` +
+    return `<div class="tw"><table><tr><th>Data</th><th>Produto</th><th>Tipo</th><th class="r">Qtd</th><th class="r">Saldo</th><th>Obs.</th><th>Por</th></tr>` +
       rows.map(m => `<tr><td>${fmtDT(m.date)}</td><td>${esc(m.pname)}</td><td><span class="pill ${MV[m.type][1]}">${MV[m.type][0]}</span></td>
-        <td class="r">${m.delta > 0 ? "+" : ""}${fmtQ(m.delta)} ${esc(m.unit)}</td><td class="r">${fmtQ(m.after)}</td><td>${esc(m.note || "")}</td></tr>`).join("") + `</table></div>`;
+        <td class="r">${m.delta > 0 ? "+" : ""}${fmtQ(m.delta)} ${esc(m.unit)}</td><td class="r">${fmtQ(m.after)}</td><td>${esc(m.note || "")}</td><td>${MODE === "owner" && m.by === "Davi" && Date.parse(m.date) > ui.prevSeen ? "🆕 " : ""}${esc(byLabel(m.by))}</td></tr>`).join("") + `</table></div>`;
   }
   const rows = s.items.filter(i => (!ui.cat || i.category === ui.cat) &&
     (!q || [i.name, i.sku, i.category, i.location, i.supplier].join(" ").toLowerCase().includes(q)))
@@ -712,7 +759,7 @@ function stockClick(a, D, s){
   if (a === "delprod") {
     const it = s.items.find(i => i.id === D.id);
     if (!confirm(`Excluir "${it.name}" do estoque?`)) return true;
-    s.items = s.items.filter(i => i !== it); s.moves = s.moves.filter(m => m.pid !== it.id); refresh(); return true;
+    s.items = s.items.filter(i => i !== it); s.moves = s.moves.filter(m => m.pid !== it.id); s.del[it.id] = Date.now(); refresh(); return true;
   }
   if (a === "csv") {
     const head = ["SKU","Produto","Categoria","Unidade","Quantidade","Mínimo","Custo","Preço","Local","Fornecedor"];
@@ -728,7 +775,7 @@ function stockClick(a, D, s){
 /* ---------- manutenções ---------- */
 const MST = { aberta:["Aberta","warn"], andamento:["Em andamento","info"], concluida:["Concluída","ok"] };
 const PRI_L = { alta:"Alta", media:"Média", baixa:"Baixa" };
-const respList = cur => { const l = ["Eu", ...state.people.map(p => p.name)]; if (cur && !l.includes(cur)) l.push(cur); return l; };
+const respList = cur => { const l = MODE === "davi" ? ["Davi", "Dono"] : ["Eu", ...state.people.map(p => p.name)]; if (cur && !l.includes(cur)) l.push(cur); return l; };
 
 function maintHtml(m){
   const c = k => m.items.filter(i => i.status === k).length;
@@ -741,7 +788,7 @@ function maintHtml(m){
     <label class="fld">Prioridade<select name="pri"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option></select></label>
     <label class="fld wide">O que é (problema)<textarea name="problem" rows="2"></textarea></label>
     <label class="fld wide">O que precisa ser feito<textarea name="todo" rows="2"></textarea></label>
-    <label class="fld">Responsável<select name="resp">${respList().map(r => `<option>${esc(r)}</option>`).join("")}</select></label>
+    <label class="fld">Responsável<select name="resp">${respList().map(r => `<option value="${esc(r)}">${esc(byLabel(r))}</option>`).join("")}</select></label>
     <div class="bt" style="align-items:flex-end"><button type="submit" class="btn primary">+ Registrar manutenção</button></div></form>`;
   h += `<div class="seg">${[["todas","Todas"],["aberta","Abertas"],["andamento","Em andamento"],["concluida","Concluídas"]].map(([k, l]) =>
     `<button data-act="mf" data-v="${k}" class="${ui.mf===k?"on":""}">${l}</button>`).join("")}</div>`;
@@ -751,7 +798,7 @@ function maintHtml(m){
   h += `<ul>` + (rows.map(i => `<li class="stk mi ${i.status==="concluida"?"fin":""}">
     <div class="top"><span class="pri ${i.pri}" title="Prioridade ${PRI_L[i.pri]}"></span>
       <input class="eq" data-f="mequip" data-id="${i.id}" value="${esc(i.equip)}" aria-label="Equipamento">
-      <span class="pill ${MST[i.status][1]}">${MST[i.status][0]}</span>
+      ${MODE === "owner" && i.ub === "Davi" && i.u > ui.prevSeen ? `<span class="pill info">🆕 novo</span>` : ""}<span class="pill ${MST[i.status][1]}">${MST[i.status][0]}</span>
       <button class="del" data-act="mdel" data-id="${i.id}" aria-label="Remover">✕</button></div>
     <div class="mgrid">
       <label class="fld">O que é (problema)<textarea rows="2" data-f="mproblem" data-id="${i.id}">${esc(i.problem)}</textarea></label>
@@ -759,8 +806,8 @@ function maintHtml(m){
       <label class="fld">O que foi feito<textarea rows="2" data-f="mdone" data-id="${i.id}">${esc(i.done)}</textarea></label></div>
     <div class="cfg">Local <input type="text" data-f="mloc" data-id="${i.id}" value="${esc(i.loc)}">
       Prioridade <select data-f="mpri" data-id="${i.id}">${Object.keys(PRI_L).map(k => `<option value="${k}" ${i.pri===k?"selected":""}>${PRI_L[k]}</option>`).join("")}</select>
-      Responsável <select data-f="mresp" data-id="${i.id}">${respList(i.resp).map(r => `<option ${r===i.resp?"selected":""}>${esc(r)}</option>`).join("")}</select>
-      · Aberta em ${fmtD(i.opened)}${i.closed ? ` · Concluída em ${fmtD(i.closed)}` : ""}</div>
+      Responsável <select data-f="mresp" data-id="${i.id}">${respList(i.resp).map(r => `<option value="${esc(r)}" ${r===i.resp?"selected":""}>${esc(byLabel(r))}</option>`).join("")}</select>
+      · Registrada por ${esc(byLabel(i.by))} em ${fmtD(i.opened)}${i.closed ? ` · Concluída em ${fmtD(i.closed)}` : ""}</div>
     <div class="seg">${Object.keys(MST).map(k => `<button data-act="mstatus" data-id="${i.id}" data-v="${k}" class="${i.status===k?"on":""}">${MST[k][0]}</button>`).join("")}</div>
   </li>`).join("") || `<div class="empty">Nenhuma manutenção ${ui.mf === "todas" ? "registrada" : "neste filtro"}.</div>`) + `</ul>`;
   return h;
@@ -768,11 +815,11 @@ function maintHtml(m){
 
 function maintClick(a, D, m){
   if (a === "mf") { ui.mf = D.v; renderPanel(); return true; }
-  if (a === "mstatus") { const i = m.items.find(x => x.id === D.id); i.status = D.v; i.closed = D.v === "concluida" ? todayIso() : ""; refresh(); return true; }
+  if (a === "mstatus") { const i = m.items.find(x => x.id === D.id); i.status = D.v; i.closed = D.v === "concluida" ? todayIso() : ""; stamp(i); refresh(); return true; }
   if (a === "mdel") {
     const i = m.items.find(x => x.id === D.id);
     if (!confirm(`Remover a manutenção de "${i.equip}"?`)) return true;
-    m.items = m.items.filter(x => x !== i); refresh(); return true;
+    m.items = m.items.filter(x => x !== i); m.del[i.id] = Date.now(); refresh(); return true;
   }
   return false;
 }
@@ -783,7 +830,7 @@ function sideChange(e, f, p){
   const map = { mequip:"equip", mproblem:"problem", mtodo:"todo", mdone:"done", mloc:"loc", mpri:"pri", mresp:"resp" };
   if (!map[f]) return;
   const i = p.items.find(x => x.id === t.dataset.id); if (!i) return;
-  i[map[f]] = t.value; save(); render();
+  i[map[f]] = t.value; stamp(i); save(); render();
   if (f === "mpri" || f === "mresp") renderPanel();
 }
 
@@ -795,9 +842,9 @@ function sideSubmit(form, fd, p){
       min:Math.max(0, num(fd.get("min"))), cost:Math.max(0, num(fd.get("cost"))), price:Math.max(0, num(fd.get("price"))),
       location:(fd.get("location") || "").trim(), supplier:(fd.get("supplier") || "").trim() };
     const id = fd.get("id");
-    if (id) Object.assign(p.items.find(i => i.id === id), data);
+    if (id) stamp(Object.assign(p.items.find(i => i.id === id), data));
     else {
-      const it = Object.assign({ id:uid(), qty:0 }, data), q = Math.max(0, num(fd.get("qty")));
+      const it = stamp(Object.assign({ id:uid(), qty:0 }, data)), q = Math.max(0, num(fd.get("qty")));
       p.items.push(it);
       if (q > 0) { it.qty = q; stockMove(p, it, "in", q, "Estoque inicial"); }
     }
@@ -810,18 +857,18 @@ function sideSubmit(form, fd, p){
     if (t === "in") delta = q;
     else if (t === "out") { if (q > it.qty) { alert(`Saldo insuficiente: só há ${fmtQ(it.qty)} ${it.unit} em estoque.`); return; } delta = -q; }
     else delta = q - it.qty;
-    if (delta !== 0) { it.qty += delta; stockMove(p, it, t, delta, note); }
+    if (delta !== 0) { it.qty += delta; stamp(it); stockMove(p, it, t, delta, note); }
     ui.mov = null; return refresh();
   }
   if (kind === "maint") {
     const equip = (fd.get("text") || "").trim(); if (!equip) return;
-    p.items.push({ id:uid(), equip, loc:(fd.get("loc") || "").trim(), problem:(fd.get("problem") || "").trim(), todo:(fd.get("todo") || "").trim(),
+    p.items.push({ id:uid(), by:ME(), c:Date.now(), u:Date.now(), ub:ME(), equip, loc:(fd.get("loc") || "").trim(), problem:(fd.get("problem") || "").trim(), todo:(fd.get("todo") || "").trim(),
       done:"", pri:fd.get("pri") || "media", resp:fd.get("resp") || "Eu", status:"aberta", opened:todayIso(), closed:"" });
     return refresh();
   }
 }
 function stockMove(s, it, type, delta, note){
-  s.moves.unshift({ id:uid(), pid:it.id, pname:it.name, unit:it.unit, type, delta, after:it.qty, note, date:new Date().toISOString() });
+  s.moves.unshift({ by:ME(), id:uid(), pid:it.id, pname:it.name, unit:it.unit, type, delta, after:it.qty, note, date:new Date().toISOString() });
   if (s.moves.length > 3000) s.moves.length = 3000;
 }
 
@@ -897,7 +944,7 @@ panel.addEventListener("submit", e => {
 $("#addTop").onclick = addPerson;
 $("#exp").onclick = () => {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type:"application/json" }));
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ ...state, davi:undefined }, null, 2)], { type:"application/json" }));
   a.download = "minha-equipe-backup.json"; a.click(); URL.revokeObjectURL(a.href);
 };
 $("#imp").onclick = () => $("#file").click();
@@ -912,7 +959,140 @@ $("#file").onchange = async e => {
   e.target.value = "";
 };
 
-render();
+/* ---------- sincronização online ---------- */
+const SK = "equipe-key";
+let KEYV = "", syncing = false, again = false;
+function setSync(t, cls){ const el = $("#sync"); if (el) { el.textContent = t; el.className = "sync " + (cls || ""); } }
+
+async function api(method, body, action){
+  const r = await fetch("/api/state" + (action ? "?a=" + action : ""), {
+    method, cache:"no-store", headers:{ "x-key":KEYV, "content-type":"application/json" }, body:body ? JSON.stringify(body) : undefined });
+  if (r.status === 401) throw Object.assign(new Error("401"), { auth:true });
+  if (!r.ok) throw new Error(String(r.status));
+  return r.json();
+}
+
+function applyServer(d){
+  const snap = () => JSON.stringify([state.stock, state.maint, MODE === "owner" ? [state.boss, state.people] : 0]);
+  const before = snap();
+  const davi = MODE === "davi";
+  state.stock = Merge.mergeShared(d.stock, state.stock, davi);
+  state.maint = Merge.mergeShared(d.maint, state.maint, davi);
+  if (MODE === "owner") {
+    if (d.core && (+d.core.u || 0) > coreU) { state.boss = d.core.boss; state.people = d.core.people; coreU = +d.core.u; }
+    state.davi = d.davi;
+  }
+  normalize(state);
+  persistLocal();
+  if (snap() !== before) { render(); safeRenderPanel(); }
+}
+
+// não refaz o painel se o usuário estiver digitando
+function safeRenderPanel(){
+  if (!ui.id) return;
+  const a = document.activeElement;
+  if (a && panel.contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
+  if (ui.formOpen || ui.mov) return;
+  if ([...panel.querySelectorAll("form input[type=text], form textarea")].some(x => x.value)) return;
+  renderPanel();
+}
+
+function syncError(e){
+  if (e.auth) { try { localStorage.removeItem(SK); } catch(x) {} return showLocked(true); }
+  setSync("⚠ Sem conexão — tento de novo", "bad");
+  clearTimeout(syncTimer); syncTimer = setTimeout(push, 8000);
+}
+
+async function pull(){
+  try { applyServer(await api("GET")); setSync("☁ Sincronizado", "ok"); } catch(e) { syncError(e); }
+}
+async function push(){
+  if (syncing) { again = true; return; }
+  syncing = true;
+  const body = MODE === "owner"
+    ? { core:{ boss:state.boss, people:state.people, u:coreU || Date.now() }, stock:state.stock, maint:state.maint }
+    : { stock:state.stock, maint:state.maint };
+  try { applyServer(await api("PUT", body)); setSync("☁ Sincronizado", "ok"); } catch(e) { syncError(e); }
+  syncing = false;
+  if (again) { again = false; push(); }
+}
+
+function showLocked(bad){
+  document.body.className = "";
+  document.body.innerHTML = `<div class="locked"><h2>🔒 Acesso restrito</h2>
+    <p>${bad ? "Este link foi desativado ou trocado. Peça um link novo ao responsável." : "Abra o sistema pelo link de acesso que você recebeu."}</p></div>`;
+}
+
+const hasData = c => !!c && ((c.people || []).length || ((c.boss && c.boss.tasks) || []).length);
+
+async function boot(){
+  const params = new URLSearchParams(location.search);
+  let k = params.get("k");
+  try { if (k) localStorage.setItem(SK, k); else k = localStorage.getItem(SK) || ""; } catch(e) {}
+  if (params.has("k")) history.replaceState(null, "", location.pathname);
+
+  if (location.protocol === "file:" || params.has("local")) { state = load(); render(); return; }
+  if (!k) return showLocked(false);
+  KEYV = k;
+
+  let d;
+  try { d = await api("GET"); }
+  catch (e) {
+    if (e.auth) return showLocked(true);
+    MODE = localStorage.getItem("equipe-role") || "owner";           // sem internet: usa a cópia deste aparelho
+  }
+  if (d) { MODE = d.role; try { localStorage.setItem("equipe-role", MODE); } catch(e) {} }
+  KEY = MODE === "davi" ? "minha-equipe-davi" : "minha-equipe-v1";
+  document.body.classList.toggle("davi", MODE === "davi");
+  document.body.classList.toggle("srv", MODE === "owner");
+  if (MODE === "davi") $("#title").textContent = "🔧 MANUTENÇÃO & ESTOQUE";
+  state = load();
+
+  if (d && MODE === "owner" && hasData(d.core)) {
+    let useServer = true;
+    if (hasData(state) || state.people.length) {
+      let linked = false; try { linked = localStorage.getItem("equipe-linked") === "1"; } catch(e) {}
+      if (!linked && hasData({ boss:state.boss, people:state.people }) && JSON.stringify(state.people) !== JSON.stringify(d.core.people))
+        useServer = confirm("Já existem dados online e dados diferentes neste aparelho.\n\nOK = usar os dados online\nCancelar = enviar os deste aparelho para o servidor (substitui os online)");
+    }
+    if (useServer) { state.boss = d.core.boss; state.people = d.core.people; coreU = +d.core.u || 0; }
+    else coreU = Date.now();
+  } else if (MODE === "owner") coreU = Date.now();   // servidor vazio: sobe o que já existe aqui
+  try { localStorage.setItem("equipe-linked", "1"); } catch(e) {}
+
+  normalize(state);
+  if (d) { if (MODE === "owner") state.davi = d.davi; applyServer(d); }
+  render();
+  push();
+  setInterval(() => { if (!document.hidden && !syncing) pull(); }, 12000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
+}
+
+/* ---------- acesso do Davi ---------- */
+const modal = document.createElement("div"); modal.id = "modal"; document.body.appendChild(modal);
+modal.onclick = e => { if (e.target === modal) modal.classList.remove("open"); };
+function openAccess(){
+  const d = state.davi || { active:false };
+  const link = d.key ? `${location.origin}/?k=${d.key}` : "";
+  const wa = "https://wa.me/?text=" + encodeURIComponent("Davi, este é o seu link para lançar manutenções e estoque (não compartilhe): " + link);
+  modal.innerHTML = `<div class="box"><h3>🔑 Acesso do Davi</h3>
+    <p style="margin:0;color:var(--muted);font-size:.9rem">Quem abrir este link vê <b>apenas Manutenções e Estoque</b>. Nada do resto do painel (funcionários, bonificações, calendário) é enviado para ele.</p>
+    ${d.active ? `<div class="lnk" id="lnk">${esc(link)}</div>
+      <div class="row2"><button class="btn primary" id="cp">Copiar link</button><a class="btn" href="${wa}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">Enviar no WhatsApp</a></div>
+      <div class="row2"><button class="btn" id="rot">Gerar novo link</button><button class="btn" id="rev" style="color:var(--danger)">Desativar acesso</button></div>`
+      : `<div class="warn">O acesso do Davi está desativado.</div><div class="row2"><button class="btn primary" id="rot">Gerar link de acesso</button></div>`}
+    <button class="btn" id="mclose">Fechar</button></div>`;
+  modal.classList.add("open");
+  $("#mclose").onclick = () => modal.classList.remove("open");
+  const cp = $("#cp"); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(link); cp.textContent = "Copiado ✓"; } catch(e) { const r = document.createRange(); r.selectNode($("#lnk")); getSelection().removeAllRanges(); getSelection().addRange(r); } };
+  const act = async (a, msg) => { if (msg && !confirm(msg)) return; try { const r = await api("POST", null, a); state.davi = r.davi; openAccess(); } catch(e) { alert("Não consegui falar com o servidor. Tente de novo."); } };
+  $("#rot").onclick = () => act("rotate", d.active ? "Gerar um novo link? O link atual do Davi deixa de funcionar." : "");
+  const rv = $("#rev"); if (rv) rv.onclick = () => act("revoke", "Desativar o acesso do Davi? O link atual deixa de funcionar.");
+}
+$("#acc").onclick = openAccess;
+
+boot();
+
 </script>
 </body>
 </html>
