@@ -30,7 +30,8 @@ button{font:inherit;cursor:pointer;border:0;color:var(--text)}
 @keyframes flow{to{stroke-dashoffset:-26}}
 #lines polygon{fill:var(--line);opacity:.9}
 
-.root-wrap{display:flex;justify-content:center;margin-bottom:90px}
+.root-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:90px}
+.topwrap{margin-bottom:80px}
 .row{display:flex;flex-wrap:wrap;justify-content:center;gap:34px 28px}
 
 .node{
@@ -177,6 +178,38 @@ td.r,th.r{text-align:right}
 .ym small{color:var(--muted)}
 .sub{font-weight:700;color:var(--muted);font-size:.85rem;margin-top:4px}
 
+.node.side[data-id=sales] .avatar{background:linear-gradient(135deg,#ec4899,#8b5cf6)}
+.pill.mute{background:#ffffff14;color:var(--muted)}
+.seg.wrap{flex-wrap:wrap}.seg.wrap button{flex:1 1 auto;padding:10px 14px;font-size:.88rem}
+.sec{background:var(--card);border:1px solid #2a3060;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.sec h4{margin:0;font-size:1rem}
+.sec .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.sec .fld.wide,.g .fld.wide{grid-column:1/-1}
+.sec .fld input,.sec .fld select,.sec .fld textarea{width:100%}
+.ro{background:var(--bg);border-radius:999px;padding:11px 14px;color:var(--text);font-size:.9rem}
+.meta{color:var(--muted);font-size:.78rem}
+.tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:8px}
+.tot div{background:var(--bg);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tot small{color:var(--muted);font-size:.72rem}.tot b{font-size:1.05rem}
+.tot .all{background:linear-gradient(145deg,#2b2466,#1d2a5c);border:1px solid #4a4399}.tot .all b{color:var(--gold);font-size:1.25rem}
+.tl{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid #2f3566;display:flex;flex-direction:column;gap:12px}
+.tl li{background:transparent;border:0;padding:0;display:block;font-size:.88rem;position:relative}
+.tl li::before{content:"";position:absolute;left:-21px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.tl li b{color:var(--muted);font-weight:500;font-size:.78rem}
+ul.cl{gap:6px}ul.cl li{padding:9px 12px;border-radius:14px}
+.mini-in{width:84px;padding:6px 10px;font-size:.85rem;text-align:right}
+table.os td small,table.os th{white-space:nowrap}
+.clk{cursor:pointer}.clk:hover{background:#ffffff08}
+.kb{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,1fr);gap:10px;overflow-x:auto;padding-bottom:8px}
+.kcol{background:var(--bg);border-radius:20px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.kh{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:2px 4px}.kh small{color:var(--muted);font-size:.72rem}
+.kc{background:var(--card);border:1px solid #2a3060;border-radius:16px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.kc:hover{border-color:var(--accent)}.kc small{color:var(--muted);font-size:.74rem}
+.kf{display:flex;justify-content:space-between;font-size:.78rem;margin-top:2px}
+.kb2{display:flex;gap:4px;justify-content:flex-end;margin-top:4px}
+.kempty{color:var(--muted);text-align:center;padding:10px}
+a.ib{display:inline-grid;place-items:center;text-decoration:none;color:inherit;vertical-align:middle}
+li.clk .t small{display:block}
 .sync{font-size:.8rem;color:var(--muted);align-self:center}
 .sync.ok{color:var(--ok)}.sync.bad{color:var(--danger)}
 .srv-only{display:none}
@@ -269,6 +302,8 @@ li.mi.fin{opacity:.8}
 <aside id="panel" aria-live="polite"></aside>
 
 <script src="merge.js"></script>
+<script src="maint.js"></script>
+<script src="sales.js"></script>
 <script>
 let KEY = "minha-equipe-v1";
 const COLORS = ["#7c5cff","#22d3ee","#f472b6","#fb923c","#34d399","#facc15","#60a5fa","#f87171"];
@@ -304,8 +339,8 @@ function normalize(s){
     unit:i.unit || "un", qty:+i.qty || 0, min:+i.min || 0, cost:+i.cost || 0, price:+i.price || 0, location:i.location || "", supplier:i.supplier || "", u:+i.u || 0, ub:i.ub || "" }));
   s.stock.moves = s.stock.moves || [];
   s.maint = Object.assign({ name:"Manutenções", role:"Equipamentos e reparos", items:[] }, s.maint);
-  s.maint.items = s.maint.items.map(i => ({ id:i.id || uid(), equip:i.equip || "Equipamento", loc:i.loc || "", problem:i.problem || "", todo:i.todo || "",
-    done:i.done || "", pri:i.pri || "media", resp:i.resp || "Eu", status:i.status || "aberta", opened:i.opened || todayIso(), closed:i.closed || "", by:i.by || "Eu", c:+i.c || 0, u:+i.u || 0, ub:i.ub || "" }));
+  s.maint.items = s.maint.items.map(normMaintItem); numberMaint(s.maint.items);
+  s.crm = normCrm(s.crm);
   s.stock.moves = s.stock.moves.map(m => Object.assign({ by:"Eu" }, m));
   s.stock.del = s.stock.del || {}; s.maint.del = s.maint.del || {};
   s.people.forEach(p => {
@@ -335,12 +370,12 @@ let MODE = "local";
 const ME = () => MODE === "davi" ? "Davi" : "Eu";
 const byLabel = b => b === "Eu" && MODE === "davi" ? "Dono" : b;
 const stamp = o => { o.u = Date.now(); o.ub = ME(); return o; };
-let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas", prevSeen:0 };
+let ui = { id:null, tab:"demanda", mk:monthKey(new Date()), view:"semana", cur:todayIso(), q:"", cat:"", formOpen:false, edit:null, mov:null, stab:"prod", mf:"todas", prevSeen:0, mOpen:null, mNew:false, mq:"", mt:"", ct:"lista", cOpen:null, cNew:false, cq:"", cfT:"", cfS:"" };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const initial = n => (n.trim()[0] || "?").toUpperCase();
-const target = id => id === "boss" ? state.boss : id === "stock" ? state.stock : id === "maint" ? state.maint : state.people.find(p => p.id === id);
+const target = id => id === "boss" ? state.boss : id === "stock" ? state.stock : id === "maint" ? state.maint : id === "sales" ? state.crm : state.people.find(p => p.id === id);
 
 /* ---------- bonificação ---------- */
 function calc(p, mk){
@@ -366,7 +401,7 @@ function calc(p, mk){
 
 /* ---------- árvore ---------- */
 function card(p, id){
-  const boss = id === "boss", side = id === "stock" || id === "maint";
+  const boss = id === "boss", side = id === "stock" || id === "maint" || id === "sales";
   const el = document.createElement("div");
   el.className = "node" + (boss ? " boss" : side ? " side" : "");
   el.dataset.id = id;
@@ -381,18 +416,23 @@ function card(p, id){
     extra = bad ? `<div class="badge bad">⚠ ${bad} em falta/baixo</div>` : (k.n ? `<div class="badge good">✔ Tudo em dia</div>` : "");
     extra += newBadge("stock");
   } else if (id === "maint") {
-    const done = p.items.filter(i => i.status === "concluida").length, open = p.items.length - done;
-    const urg = p.items.filter(i => i.status !== "concluida" && i.pri === "alta").length;
+    const done = p.items.filter(i => i.status === "concluida").length, open = p.items.filter(isOpenOS).length;
+    const urg = p.items.filter(i => isOpenOS(i) && i.pri === "alta").length, late = p.items.filter(lateOS).length;
     bar = p.items.length ? Math.round(done / p.items.length * 100) : 0; l = `${open} em aberto`; r = `${done} concluídas`;
     extra = urg ? `<div class="badge bad">🔴 ${urg} urgente${urg > 1 ? "s" : ""}</div>` : "";
+    extra += late ? `<div class="badge bad">⏰ ${late} atrasada${late > 1 ? "s" : ""}</div>` : "";
     extra += newBadge("maint");
+  } else if (id === "sales") {
+    const k = salesStats(p);
+    bar = k.n ? Math.round(p.leads.filter(x => x.stage === "ganho").length / k.n * 100) : 0; l = `${k.active} no funil`; r = brl(k.pipe);
+    extra = k.due ? `<div class="badge ${k.late ? "bad" : ""}">📞 ${k.due} retorno${k.due > 1 ? "s" : ""} ${k.late ? "(" + k.late + " atrasado" + (k.late > 1 ? "s" : "") + ")" : "hoje"}</div>` : "";
   } else {
     el.style.setProperty("--c", p.color);
     const c = calc(p, monthKey(new Date()));
     bar = Math.round(c.pct); l = "Nota do mês"; r = bar + "%";
     if (p.bonus.on) extra = `<div class="badge">💰 ${brl(c.money)}</div>`;
   }
-  const icon = boss ? "🧠" : id === "stock" ? "📦" : id === "maint" ? "🔧" : esc(initial(p.name));
+  const icon = boss ? "🧠" : id === "stock" ? "📦" : id === "maint" ? "🔧" : id === "sales" ? "🤝" : esc(initial(p.name));
   el.innerHTML = `
     <div class="avatar">${icon}</div>
     <h3>${esc(p.name)}</h3>
@@ -420,6 +460,10 @@ function render(){
   const hub = document.createElement("div"); hub.className = "hub"; hub.id = "hub";
   if (MODE === "davi") hub.append(cardFor("maint"), cardFor("stock"));
   else hub.append(cardFor("maint"), cardFor("boss"), cardFor("stock"));
+  if (MODE !== "davi") {
+    const top = document.createElement("div"); top.className = "topwrap";
+    top.appendChild(cardFor("sales")); rw.appendChild(top);
+  }
   rw.appendChild(hub);
   if (MODE !== "davi") {
     state.people.forEach(p => row.appendChild(card(p, p.id)));
@@ -449,6 +493,12 @@ function drawLines(){
     out += `<polygon points="${x2-7},${y2-4} ${x2+7},${y2-4} ${x2},${y2+7}"/>`;
   });
   if (getComputedStyle($("#hub")).flexDirection === "row") {
+    const sn = document.querySelector('.node[data-id="sales"]');
+    if (sn) {
+      const r = sn.getBoundingClientRect(), x = b.left + b.width/2 - tr.left, tip = r.bottom - tr.top + 6;
+      out += `<path d="M${x},${b.top - tr.top} L${x},${tip + 8}"/>`;
+      out += `<polygon points="${x},${tip} ${x-7},${tip+11} ${x+7},${tip+11}"/>`;
+    }
     const y = b.top + b.height/2 - tr.top;
     [["maint", -1], ["stock", 1]].forEach(([id, d]) => {
       const n = document.querySelector(`.node[data-id="${id}"]`); if (!n) return;
@@ -474,7 +524,7 @@ function openPanel(id, focusName){
   ui.prevSeen = 0;
   if (MODE === "owner" && (id === "stock" || id === "maint")) { ui.prevSeen = getSeen(id); try { localStorage.setItem(seenKey(id), String(Date.now())); } catch(e) {} }
   ui.id = id; ui.tab = "demanda"; ui.mk = monthKey(new Date()); ui.cur = todayIso();
-  ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas";
+  ui.q = ""; ui.cat = ""; ui.formOpen = false; ui.edit = null; ui.mov = null; ui.stab = "prod"; ui.mf = "todas"; ui.mOpen = null; ui.mNew = false; ui.mq = ""; ui.mt = ""; ui.ct = "lista"; ui.cOpen = null; ui.cNew = false; ui.cq = ""; ui.cfT = ""; ui.cfS = "";
   renderPanel();
   panel.scrollTop = 0;
   panel.classList.add("open"); $("#overlay").classList.add("open");
@@ -487,7 +537,7 @@ function closePanel(){
 $("#overlay").onclick = closePanel;
 addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
 
-const ICONS = { boss:"🧠", stock:"📦", maint:"🔧" };
+const ICONS = { boss:"🧠", stock:"📦", maint:"🔧", sales:"🤝" };
 function header(p, icon){
   const bg = icon ? "linear-gradient(135deg,#7c5cff,#22d3ee)" : p.color;
   return `<div class="ph">
@@ -505,7 +555,7 @@ function renderPanel(){
   const sc = panel.scrollTop, id = ui.id, side = id in ICONS;
   panel.classList.toggle("wide", side);
   panel.style.setProperty("--c", side ? "var(--accent)" : p.color);
-  const body = id === "boss" ? bossHtml(p) : id === "stock" ? stockHtml(p) : id === "maint" ? maintHtml(p) : empHtml(p);
+  const body = id === "boss" ? bossHtml(p) : id === "stock" ? stockHtml(p) : id === "maint" ? maintHtml(p) : id === "sales" ? salesHtml(p) : empHtml(p);
   panel.innerHTML = header(p, ICONS[id]) + body;
   panel.scrollTop = sc;
 }
@@ -772,70 +822,14 @@ function stockClick(a, D, s){
   return false;
 }
 
-/* ---------- manutenções ---------- */
-const MST = { aberta:["Aberta","warn"], andamento:["Em andamento","info"], concluida:["Concluída","ok"] };
-const PRI_L = { alta:"Alta", media:"Média", baixa:"Baixa" };
-const respList = cur => { const l = MODE === "davi" ? ["Davi", "Dono"] : ["Eu", ...state.people.map(p => p.name)]; if (cur && !l.includes(cur)) l.push(cur); return l; };
-
-function maintHtml(m){
-  const c = k => m.items.filter(i => i.status === k).length;
-  const kp = (l, v, cl = "") => `<div class="kpi ${cl}"><small>${l}</small><b>${v}</b></div>`;
-  const urg = m.items.filter(i => i.status !== "concluida" && i.pri === "alta").length;
-  let h = `<div class="kpis">${kp("Abertas", c("aberta"))}${kp("Em andamento", c("andamento"))}${kp("Concluídas", c("concluida"))}${kp("Urgentes em aberto", urg, urg ? "warn" : "")}</div>`;
-  h += `<form class="pf" data-form="maint">
-    <label class="fld wide">Equipamento *<input type="text" name="text" placeholder="Ex.: Ar-condicionado da loja, Impressora fiscal…" required></label>
-    <label class="fld">Local / setor<input type="text" name="loc"></label>
-    <label class="fld">Prioridade<select name="pri"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option></select></label>
-    <label class="fld wide">O que é (problema)<textarea name="problem" rows="2"></textarea></label>
-    <label class="fld wide">O que precisa ser feito<textarea name="todo" rows="2"></textarea></label>
-    <label class="fld">Responsável<select name="resp">${respList().map(r => `<option value="${esc(r)}">${esc(byLabel(r))}</option>`).join("")}</select></label>
-    <div class="bt" style="align-items:flex-end"><button type="submit" class="btn primary">+ Registrar manutenção</button></div></form>`;
-  h += `<div class="seg">${[["todas","Todas"],["aberta","Abertas"],["andamento","Em andamento"],["concluida","Concluídas"]].map(([k, l]) =>
-    `<button data-act="mf" data-v="${k}" class="${ui.mf===k?"on":""}">${l}</button>`).join("")}</div>`;
-  const order = { alta:0, media:1, baixa:2 };
-  const rows = m.items.filter(i => ui.mf === "todas" || i.status === ui.mf)
-    .sort((a, b) => (a.status === "concluida") - (b.status === "concluida") || order[a.pri] - order[b.pri] || b.opened.localeCompare(a.opened));
-  h += `<ul>` + (rows.map(i => `<li class="stk mi ${i.status==="concluida"?"fin":""}">
-    <div class="top"><span class="pri ${i.pri}" title="Prioridade ${PRI_L[i.pri]}"></span>
-      <input class="eq" data-f="mequip" data-id="${i.id}" value="${esc(i.equip)}" aria-label="Equipamento">
-      ${MODE === "owner" && i.ub === "Davi" && i.u > ui.prevSeen ? `<span class="pill info">🆕 novo</span>` : ""}<span class="pill ${MST[i.status][1]}">${MST[i.status][0]}</span>
-      <button class="del" data-act="mdel" data-id="${i.id}" aria-label="Remover">✕</button></div>
-    <div class="mgrid">
-      <label class="fld">O que é (problema)<textarea rows="2" data-f="mproblem" data-id="${i.id}">${esc(i.problem)}</textarea></label>
-      <label class="fld">O que precisa ser feito<textarea rows="2" data-f="mtodo" data-id="${i.id}">${esc(i.todo)}</textarea></label>
-      <label class="fld">O que foi feito<textarea rows="2" data-f="mdone" data-id="${i.id}">${esc(i.done)}</textarea></label></div>
-    <div class="cfg">Local <input type="text" data-f="mloc" data-id="${i.id}" value="${esc(i.loc)}">
-      Prioridade <select data-f="mpri" data-id="${i.id}">${Object.keys(PRI_L).map(k => `<option value="${k}" ${i.pri===k?"selected":""}>${PRI_L[k]}</option>`).join("")}</select>
-      Responsável <select data-f="mresp" data-id="${i.id}">${respList(i.resp).map(r => `<option value="${esc(r)}" ${r===i.resp?"selected":""}>${esc(byLabel(r))}</option>`).join("")}</select>
-      · Registrada por ${esc(byLabel(i.by))} em ${fmtD(i.opened)}${i.closed ? ` · Concluída em ${fmtD(i.closed)}` : ""}</div>
-    <div class="seg">${Object.keys(MST).map(k => `<button data-act="mstatus" data-id="${i.id}" data-v="${k}" class="${i.status===k?"on":""}">${MST[k][0]}</button>`).join("")}</div>
-  </li>`).join("") || `<div class="empty">Nenhuma manutenção ${ui.mf === "todas" ? "registrada" : "neste filtro"}.</div>`) + `</ul>`;
-  return h;
-}
-
-function maintClick(a, D, m){
-  if (a === "mf") { ui.mf = D.v; renderPanel(); return true; }
-  if (a === "mstatus") { const i = m.items.find(x => x.id === D.id); i.status = D.v; i.closed = D.v === "concluida" ? todayIso() : ""; stamp(i); refresh(); return true; }
-  if (a === "mdel") {
-    const i = m.items.find(x => x.id === D.id);
-    if (!confirm(`Remover a manutenção de "${i.equip}"?`)) return true;
-    m.items = m.items.filter(x => x !== i); m.del[i.id] = Date.now(); refresh(); return true;
-  }
-  return false;
-}
-
-function sideChange(e, f, p){
-  const t = e.target;
-  if (f === "cat") { ui.cat = t.value; renderPanel(); return; }
-  const map = { mequip:"equip", mproblem:"problem", mtodo:"todo", mdone:"done", mloc:"loc", mpri:"pri", mresp:"resp" };
-  if (!map[f]) return;
-  const i = p.items.find(x => x.id === t.dataset.id); if (!i) return;
-  i[map[f]] = t.value; stamp(i); save(); render();
-  if (f === "mpri" || f === "mresp") renderPanel();
+function sideChange(e, f){
+  if (f === "cat") { ui.cat = e.target.value; renderPanel(); }
 }
 
 function sideSubmit(form, fd, p){
   const kind = form.dataset.form;
+  if (ui.id === "maint") return maintSubmit(form, fd, p);
+  if (ui.id === "sales") return salesSubmit(form, fd, p);
   if (kind === "prod") {
     const name = (fd.get("text") || "").trim(); if (!name) return;
     const data = { name, sku:(fd.get("sku") || "").trim(), category:(fd.get("category") || "").trim(), unit:fd.get("unit") || "un",
@@ -860,12 +854,6 @@ function sideSubmit(form, fd, p){
     if (delta !== 0) { it.qty += delta; stamp(it); stockMove(p, it, t, delta, note); }
     ui.mov = null; return refresh();
   }
-  if (kind === "maint") {
-    const equip = (fd.get("text") || "").trim(); if (!equip) return;
-    p.items.push({ id:uid(), by:ME(), c:Date.now(), u:Date.now(), ub:ME(), equip, loc:(fd.get("loc") || "").trim(), problem:(fd.get("problem") || "").trim(), todo:(fd.get("todo") || "").trim(),
-      done:"", pri:fd.get("pri") || "media", resp:fd.get("resp") || "Eu", status:"aberta", opened:todayIso(), closed:"" });
-    return refresh();
-  }
 }
 function stockMove(s, it, type, delta, note){
   s.moves.unshift({ by:ME(), id:uid(), pid:it.id, pname:it.name, unit:it.unit, type, delta, after:it.qty, note, date:new Date().toISOString() });
@@ -882,6 +870,7 @@ panel.addEventListener("click", e => {
   if (a === "close") return closePanel();
   if (ui.id === "stock" && stockClick(a, D, p)) return;
   if (ui.id === "maint" && maintClick(a, D, p)) return;
+  if (ui.id === "sales" && salesClick(a, D, p)) return;
   if (a === "tab") { ui.tab = D.t; return renderPanel(); }
   if (a === "mnav") { ui.mk = shiftMonth(ui.mk, +D.d); return renderPanel(); }
   if (a === "day") { const i = item(); i.days[D.day] = !i.days[D.day]; if (!i.days[D.day]) delete i.days[D.day]; return refresh(); }
@@ -911,6 +900,8 @@ panel.addEventListener("click", e => {
 panel.addEventListener("input", e => {
   const f = e.target.dataset.f, p = target(ui.id);
   if (f === "q") { ui.q = e.target.value; const l = $("#stlist"); if (l) l.innerHTML = stockList(); return; }
+  if (f === "mq") { ui.mq = e.target.value; const l = $("#mlist"); if (l) l.innerHTML = maintList(); return; }
+  if (f === "cq") { ui.cq = e.target.value; const l = $("#clist"); if (l) l.innerHTML = salesList(); return; }
   if (f !== "name" && f !== "role") return;
   if (f === "name") p.name = e.target.value || "Sem nome"; else p.role = e.target.value;
   save();
@@ -918,8 +909,10 @@ panel.addEventListener("input", e => {
   old.replaceWith(cardFor(ui.id)); drawLines();
 });
 panel.addEventListener("change", e => {
-  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role" || f === "q") return;
-  if (ui.id === "stock" || ui.id === "maint") return sideChange(e, f, p);
+  const f = e.target.dataset.f, p = target(ui.id); if (!f || f === "name" || f === "role" || f === "q" || f === "mq" || f === "cq") return;
+  if (ui.id === "stock") return sideChange(e, f);
+  if (ui.id === "maint") return maintChange(e, f, p);
+  if (ui.id === "sales") return salesChange(e, f, p);
   const v = Math.max(0, +e.target.value || 0);
   if (f === "amount" || f === "min") p.bonus[f] = v;
   else { const i = p.items.find(x => x.id === e.target.dataset.id); i[f] = v; }
@@ -928,7 +921,7 @@ panel.addEventListener("change", e => {
 panel.addEventListener("submit", e => {
   e.preventDefault();
   const p = target(ui.id), fd = new FormData(e.target), text = (fd.get("text") || "").trim();
-  if (ui.id === "stock" || ui.id === "maint") return sideSubmit(e.target, fd, p);
+  if (ui.id === "stock" || ui.id === "maint" || ui.id === "sales") return sideSubmit(e.target, fd, p);
   if (!text) return;
   if (e.target.dataset.form === "task") {
     p.tasks.push({ id:uid(), text, date:fd.get("date") || ui.cur, time:fd.get("time") || "", done:false });
@@ -973,13 +966,13 @@ async function api(method, body, action){
 }
 
 function applyServer(d){
-  const snap = () => JSON.stringify([state.stock, state.maint, MODE === "owner" ? [state.boss, state.people] : 0]);
+  const snap = () => JSON.stringify([state.stock, state.maint, MODE === "owner" ? [state.boss, state.people, state.crm] : 0]);
   const before = snap();
   const davi = MODE === "davi";
   state.stock = Merge.mergeShared(d.stock, state.stock, davi);
   state.maint = Merge.mergeShared(d.maint, state.maint, davi);
   if (MODE === "owner") {
-    if (d.core && (+d.core.u || 0) > coreU) { state.boss = d.core.boss; state.people = d.core.people; coreU = +d.core.u; }
+    if (d.core && (+d.core.u || 0) > coreU) { state.boss = d.core.boss; state.people = d.core.people; state.crm = d.core.crm || state.crm; coreU = +d.core.u; }
     state.davi = d.davi;
   }
   normalize(state);
@@ -1010,7 +1003,7 @@ async function push(){
   if (syncing) { again = true; return; }
   syncing = true;
   const body = MODE === "owner"
-    ? { core:{ boss:state.boss, people:state.people, u:coreU || Date.now() }, stock:state.stock, maint:state.maint }
+    ? { core:{ boss:state.boss, people:state.people, crm:state.crm, u:coreU || Date.now() }, stock:state.stock, maint:state.maint }
     : { stock:state.stock, maint:state.maint };
   try { applyServer(await api("PUT", body)); setSync("☁ Sincronizado", "ok"); } catch(e) { syncError(e); }
   syncing = false;
@@ -1023,7 +1016,7 @@ function showLocked(bad){
     <p>${bad ? "Este link foi desativado ou trocado. Peça um link novo ao responsável." : "Abra o sistema pelo link de acesso que você recebeu."}</p></div>`;
 }
 
-const hasData = c => !!c && ((c.people || []).length || ((c.boss && c.boss.tasks) || []).length);
+const hasData = c => !!c && ((c.people || []).length || ((c.boss && c.boss.tasks) || []).length || ((c.crm && c.crm.leads) || []).length);
 
 async function boot(){
   const params = new URLSearchParams(location.search);
@@ -1055,7 +1048,7 @@ async function boot(){
       if (!linked && hasData({ boss:state.boss, people:state.people }) && JSON.stringify(state.people) !== JSON.stringify(d.core.people))
         useServer = confirm("Já existem dados online e dados diferentes neste aparelho.\n\nOK = usar os dados online\nCancelar = enviar os deste aparelho para o servidor (substitui os online)");
     }
-    if (useServer) { state.boss = d.core.boss; state.people = d.core.people; coreU = +d.core.u || 0; }
+    if (useServer) { state.boss = d.core.boss; state.people = d.core.people; state.crm = d.core.crm || state.crm; coreU = +d.core.u || 0; }
     else coreU = Date.now();
   } else if (MODE === "owner") coreU = Date.now();   // servidor vazio: sobe o que já existe aqui
   try { localStorage.setItem("equipe-linked", "1"); } catch(e) {}
